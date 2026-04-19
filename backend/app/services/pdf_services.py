@@ -26,19 +26,17 @@ def extract_text_fast(file_bytes):
     return text.strip()
 
 
-# 🔹 OCR fallback (only if needed)
 def extract_text_ocr(file_bytes, max_pages=10):
     images = convert_from_bytes(file_bytes)
 
     text = ""
     for i, img in enumerate(images):
-        if i >= max_pages:   # 🔥 limit pages for speed
+        if i >= max_pages:   
             break
 
         img = np.array(img)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        # Light preprocessing
+        
         _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
 
         page_text = pytesseract.image_to_string(thresh)
@@ -46,28 +44,24 @@ def extract_text_ocr(file_bytes, max_pages=10):
 
     return text
 
-
-# 🔹 MAIN FUNCTION (Hybrid approach)
 def extract_text_from_pdf(file_bytes):
 
     file_key = get_file_hash(file_bytes)
 
-    # ✅ 1. Check cache
+ 
     if file_key in CACHE:
         print("⚡ Using cached text")
         return CACHE[file_key]
 
     print("📄 Extracting text...")
 
-    # ✅ 2. Try fast extraction first
+
     text = extract_text_fast(file_bytes)
 
-    # ✅ 3. If text too small → use OCR
     if len(text) < 50:
         print("⚡ Switching to OCR...")
         text = extract_text_ocr(file_bytes)
 
-    # ✅ 4. Store in cache
     CACHE[file_key] = text
 
     return text

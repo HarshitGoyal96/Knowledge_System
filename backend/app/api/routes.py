@@ -4,6 +4,7 @@ from app.services.ocr_services import extract_text
 from app.services.pdf_services import extract_text_from_pdf
 from app.services.semantic_service import semantic_search
 from app.services.chat_service import generate_answer
+from app.services.learning_service import generate_learning_content
 
 router = APIRouter()
 @router.get("/health")
@@ -18,7 +19,7 @@ async def upload_file(file: UploadFile = File(...)):
     
     return {"extracted_text":text}
 
-@router.post("/ana;yze")
+@router.post("/analyze")
 async def analyze(file: UploadFile = File(...)):
     content = await file.read()
     
@@ -77,4 +78,16 @@ async def chat_pdf(file: UploadFile = File(...), query: str = Query(...)):
     return {
         "query": query,
         "answer": answer
+    }
+
+@router.post("/analyze-notes")
+async def analyze_notes(file: UploadFile = File(...)):
+    content = await file.read()
+
+    text = extract_text_from_pdf(content)
+
+    result = generate_learning_content(text)
+
+    return {
+        "analysis": result
     }
