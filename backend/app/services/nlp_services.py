@@ -14,9 +14,23 @@ def normalize_text(text):
 def extract_keywords(text , top_n = 10):
     text = normalize_text(text)
     words = text.split()
-    words = [word for word in words if len(word)>3 and word not in STOPWORDS]
+    words = [
+        w for w in words
+        if w not in STOPWORDS and len(w) > 3
+    ]
     freq = Counter(words)
-    keywords = [word for word, _ in freq.most_common(top_n)]
+    max_freq = max(freq.values()) if freq else 1
+
+    scored_words = {
+        word: count / max_freq
+        for word, count in freq.items()
+    }
+    sorted_words = sorted(
+        scored_words.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+    keywords = [word for word, _ in sorted_words[:top_n]]
     return keywords
 
 def extract_summary(text):
@@ -31,3 +45,15 @@ def highlight_words(text , keywords):
     for word in keywords:
         text   = re.sub(rf"\b({word})\b", r"**\1**", text, flags=re.IGNORECASE)
     return text
+
+def analyze_large_text(text):
+    chunks = text.split("\n")
+    all_keywords = []
+
+    for chunk in chunks:
+        if len(chunk.strip()) == 0:
+            continue
+        keywords = extract_keywords(chunk)
+        all_keywords.extend(keywords)
+
+    return list(set(all_keywords))
