@@ -13,53 +13,79 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def generate_learning_content(text):
 
-    # 🔥 Clean input (important)
-    text = text[:3000]  # limit size for quality
+    text = text[:4000]
 
     prompt = f"""
-You are an expert study assistant.
+You are an AI study assistant.
 
-Analyze the content and extract structured learning material.
+Analyze the content carefully.
 
-STRICT RULES:
-- Ignore noise, broken words, OCR errors
-- Focus only on meaningful academic content
-- Keep answers clear and precise
+Extract:
 
-Return ONLY valid JSON.
+1. Main study topics
+2. Flashcards
+3. Mind map concepts
 
-Format:
+IMPORTANT RULES:
+- Return ONLY valid JSON
+- No markdown
+- No explanations
+- No extra text
+- Keep topics short
+- Generate at least 5 flashcards if possible
+
+JSON FORMAT:
+
 {{
-  "topics": ["topic1", "topic2"],
+  "topics": ["Topic 1", "Topic 2"],
+
   "flashcards": [
-    {{"question": "...", "answer": "..."}}
+    {{
+      "question": "What is Git?",
+      "answer": "Git is a version control system."
+    }}
   ],
+
   "mindmap": {{
-    "main_topic": {{
-        "sub_topic": ["point1", "point2"]
+    "Main Topic": {{
+      "Sub Topic": ["Point 1", "Point 2"]
     }}
   }}
 }}
 
-Content:
+CONTENT:
 {text}
 """
 
     try:
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
             temperature=0.2
         )
 
         output = response.choices[0].message.content
 
-        # 🔥 Ensure JSON format
-        try:
-            return json.loads(output)
-        except:
-            return {"raw_output": output}
+        print("RAW OUTPUT:", output)
+
+        # 🔥 Clean AI response
+        output = output.strip()
+
+        if output.startswith("```json"):
+            output = output.replace("```json", "").replace("```", "")
+
+        import json
+        parsed = json.loads(output)
+
+        return parsed
 
     except Exception as e:
         print("ERROR:", e)
-        return {"error": "Failed to generate content"}
+
+        return {
+            "topics": [],
+            "flashcards": [],
+            "mindmap": {}
+        }
