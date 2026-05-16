@@ -21,6 +21,7 @@ export default function App() {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState([]);
   const [chatOpen, setChatOpen] = useState(false);
+  const [fullMindmap, setFullMindmap] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const [data, setData] = useState({
@@ -107,7 +108,7 @@ export default function App() {
   };
 
 
-  const createMindMapNodes = () => {
+const createMindMapNodes = () => {
 
   const nodes = [];
   const edges = [];
@@ -119,22 +120,28 @@ export default function App() {
 
       const parentId = `parent-${parentIndex}`;
 
+      // MAIN TOPIC NODE
+
       nodes.push({
         id: parentId,
         data: {
           label: parent,
         },
         position: {
-          x: 300,
-          y: parentIndex * 250,
+          x: 700,
+          y: parentIndex * 700,
         },
         style: {
           background: "#06b6d4",
           color: "black",
           border: "none",
-          padding: 12,
-          borderRadius: 16,
+          padding: 18,
+          borderRadius: 18,
           fontWeight: "bold",
+          fontSize: 18,
+          minWidth: 220,
+          textAlign: "center",
+          boxShadow: "0 0 25px rgba(6,182,212,0.35)",
         },
       });
 
@@ -145,23 +152,30 @@ export default function App() {
 
           const childId = `${parentId}-${childIndex}`;
 
+          // SUBTOPIC NODE
+
           nodes.push({
             id: childId,
             data: {
               label: subTopic,
             },
             position: {
-              x: 700,
-              y: parentIndex * 250 + childIndex * 120,
+              x: 250 + childIndex * 450,
+              y: parentIndex * 700 + 220,
             },
             style: {
               background: "#18181b",
               color: "white",
               border: "1px solid #3f3f46",
-              padding: 10,
-              borderRadius: 14,
+              padding: 14,
+              borderRadius: 16,
+              minWidth: 200,
+              textAlign: "center",
+              boxShadow: "0 0 18px rgba(168,85,247,0.18)",
             },
           });
+
+          // EDGE: PARENT -> CHILD
 
           edges.push({
             id: `edge-${parentId}-${childId}`,
@@ -170,6 +184,7 @@ export default function App() {
             animated: true,
             style: {
               stroke: "#06b6d4",
+              strokeWidth: 2,
             },
           });
 
@@ -178,27 +193,36 @@ export default function App() {
             const pointId =
               `${childId}-${pointIndex}`;
 
+            // CONCEPT POINT NODE
+
             nodes.push({
               id: pointId,
               data: {
                 label: point,
               },
               position: {
-                x: 1100,
-                y:
-                  parentIndex * 250 +
-                  childIndex * 120 +
-                  pointIndex * 70,
-              },
+                        x:
+                          120 +
+                          childIndex * 500 +
+                          pointIndex * 220,
+
+                        y:
+                          parentIndex * 700 +
+                          420,
+                      },
               style: {
                 background: "#27272a",
                 color: "#d4d4d8",
                 border: "1px solid #3f3f46",
-                padding: 8,
-                borderRadius: 12,
-                fontSize: 12,
+                padding: 10,
+                borderRadius: 14,
+                fontSize: 13,
+                minWidth: 180,
+                textAlign: "center",
               },
             });
+
+            // EDGE: CHILD -> POINT
 
             edges.push({
               id: `edge-${childId}-${pointId}`,
@@ -207,6 +231,7 @@ export default function App() {
               animated: true,
               style: {
                 stroke: "#a855f7",
+                strokeWidth: 2,
               },
             });
 
@@ -223,7 +248,9 @@ export default function App() {
   );
 
   return { nodes, edges };
+
 };
+
 const {
   nodes,
   edges,
@@ -476,7 +503,9 @@ const {
           {/* Mindmap */}
           <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
 
-  <div className="flex items-center gap-3 mb-6">
+  <div className="flex items-center justify-between mb-6">
+
+  <div className="flex items-center gap-3">
 
     <Network className="text-emerald-400" />
 
@@ -486,15 +515,32 @@ const {
 
   </div>
 
+  <button
+    onClick={() => setFullMindmap(true)}
+    className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-4 py-2 rounded-xl text-sm transition-all"
+  >
+    Fullscreen ↗
+  </button>
+
+</div>
+
   <div className="h-[600px] rounded-3xl overflow-hidden border border-zinc-800">
 
     {nodes.length > 0 ? (
 
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        fitView
-      >
+  nodes={nodes}
+  edges={edges}
+  fitView
+  nodesDraggable={true}
+  nodesConnectable={false}
+  elementsSelectable={true}
+  panOnDrag={true}
+  zoomOnScroll={true}
+  fitViewOptions={{
+    padding: 0.3,
+  }}
+>
 
         <MiniMap />
         <Controls />
@@ -544,6 +590,58 @@ const {
           </div>
         </div>
       </div>
+      {/* Fullscreen Mindmap */}
+
+{fullMindmap && (
+
+  <div className="fixed inset-0 bg-black z-[100] flex flex-col">
+
+    {/* Top Bar */}
+
+    <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950">
+
+      <h2 className="text-3xl font-bold">
+        Interactive Mind Map 🌌
+      </h2>
+
+      <button
+        onClick={() => setFullMindmap(false)}
+        className="bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-2xl border border-zinc-700"
+      >
+        Close ✕
+      </button>
+
+    </div>
+
+    {/* Fullscreen Graph */}
+
+    <div className="flex-1">
+
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        fitView
+        nodesDraggable={true}
+        nodesConnectable={false}
+        elementsSelectable={true}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        fitViewOptions={{
+          padding: 0.3,
+        }}
+      >
+
+        <MiniMap />
+        <Controls />
+        <Background />
+
+      </ReactFlow>
+
+    </div>
+
+  </div>
+
+)}
     </div>
   );
 }
