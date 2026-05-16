@@ -1,9 +1,27 @@
 import { useState } from "react";
-import { Upload, BrainCircuit, BookOpen, Network, Sparkles } from "lucide-react";
+import {
+  Upload,
+  BrainCircuit,
+  BookOpen,
+  Network,
+  Sparkles,
+} from "lucide-react";
+
+import ReactFlow, {
+  Background,
+  Controls,
+  MiniMap,
+} from "reactflow";
+
+import "reactflow/dist/style.css";
 
 export default function App() {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
 
   const [data, setData] = useState({
     topics: [],
@@ -17,6 +35,7 @@ export default function App() {
     if (!file) return;
 
     setFileName(file.name);
+    setUploadedFile(file);
     setLoading(true);
 
     const formData = new FormData();
@@ -48,31 +67,283 @@ export default function App() {
     setLoading(false);
   };
 
+  const askQuestion = async () => {
+    if (!uploadedFile || !question) return;
+
+    const userMessage = {
+      role: "user",
+      content: question,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+
+    const currentQuestion = question;
+
+    setQuestion("");
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/chat-pdf?query=${currentQuestion}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      const aiMessage = {
+        role: "assistant",
+        content: result.answer,
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
+  const createMindMapNodes = () => {
+
+  const nodes = [];
+  const edges = [];
+
+  let parentIndex = 0;
+
+  Object.entries(data.mindmap).forEach(
+    ([parent, children]) => {
+
+      const parentId = `parent-${parentIndex}`;
+
+      nodes.push({
+        id: parentId,
+        data: {
+          label: parent,
+        },
+        position: {
+          x: 300,
+          y: parentIndex * 250,
+        },
+        style: {
+          background: "#06b6d4",
+          color: "black",
+          border: "none",
+          padding: 12,
+          borderRadius: 16,
+          fontWeight: "bold",
+        },
+      });
+
+      let childIndex = 0;
+
+      Object.entries(children).forEach(
+        ([subTopic, points]) => {
+
+          const childId = `${parentId}-${childIndex}`;
+
+          nodes.push({
+            id: childId,
+            data: {
+              label: subTopic,
+            },
+            position: {
+              x: 700,
+              y: parentIndex * 250 + childIndex * 120,
+            },
+            style: {
+              background: "#18181b",
+              color: "white",
+              border: "1px solid #3f3f46",
+              padding: 10,
+              borderRadius: 14,
+            },
+          });
+
+          edges.push({
+            id: `edge-${parentId}-${childId}`,
+            source: parentId,
+            target: childId,
+            animated: true,
+            style: {
+              stroke: "#06b6d4",
+            },
+          });
+
+          points.forEach((point, pointIndex) => {
+
+            const pointId =
+              `${childId}-${pointIndex}`;
+
+            nodes.push({
+              id: pointId,
+              data: {
+                label: point,
+              },
+              position: {
+                x: 1100,
+                y:
+                  parentIndex * 250 +
+                  childIndex * 120 +
+                  pointIndex * 70,
+              },
+              style: {
+                background: "#27272a",
+                color: "#d4d4d8",
+                border: "1px solid #3f3f46",
+                padding: 8,
+                borderRadius: 12,
+                fontSize: 12,
+              },
+            });
+
+            edges.push({
+              id: `edge-${childId}-${pointId}`,
+              source: childId,
+              target: pointId,
+              animated: true,
+              style: {
+                stroke: "#a855f7",
+              },
+            });
+
+          });
+
+          childIndex++;
+
+        }
+      );
+
+      parentIndex++;
+
+    }
+  );
+
+  return { nodes, edges };
+};
+const {
+  nodes,
+  edges,
+} = createMindMapNodes();
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
       {/* Background Glow */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-3xl rounded-full" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-fuchsia-500/20 blur-3xl rounded-full" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+      {/* AI Sidebar */}
+      <div
+        className={`fixed top-0 left-0 h-screen w-[430px] bg-zinc-950 border-r border-zinc-800 z-50 transform transition-transform duration-500 shadow-2xl flex flex-col ${
+          chatOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-black">
+          <div>
+            <h2 className="text-3xl font-bold text-white">
+              AI Assistant 💬
+            </h2>
+
+            <p className="text-zinc-500 text-sm mt-2">
+              Chat with your uploaded notes
+            </p>
+          </div>
+
+          <button
+            onClick={() => setChatOpen(false)}
+            className="text-zinc-400 hover:text-white text-3xl"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.length === 0 && (
+            <div className="text-center mt-24">
+              <div className="text-7xl mb-6">🧠</div>
+
+              <h3 className="text-3xl font-bold mb-4">
+                Your AI Study Assistant
+              </h3>
+
+              <p className="text-zinc-500 leading-relaxed">
+                Upload PDFs and ask anything about your notes.
+              </p>
+            </div>
+          )}
+
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                msg.role === "user"
+                  ? "justify-end"
+                  : "justify-start"
+              }`}
+            >
+              <div
+                className={`max-w-[85%] px-5 py-4 rounded-3xl whitespace-pre-wrap leading-relaxed shadow-xl ${
+                  msg.role === "user"
+                    ? "bg-cyan-400 text-black rounded-br-md"
+                    : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-bl-md"
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="border-t border-zinc-800 p-5 bg-black">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Ask anything..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-4 outline-none text-white"
+            />
+
+            <button
+              onClick={askQuestion}
+              className="bg-cyan-400 text-black px-5 py-4 rounded-2xl font-bold hover:scale-105 transition-transform"
+            >
+              Ask
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div
+        className={`relative z-10 px-8 py-10 transition-all duration-500 ${
+          chatOpen ? "ml-[430px]" : "ml-0"
+        }`}
+      >
         {/* Hero Section */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-10 mb-12">
-          <div className="max-w-3xl">
+          <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-full mb-6">
               <Sparkles className="w-4 h-4 text-cyan-400" />
+
               <span className="text-sm text-zinc-300">
                 AI Powered Learning Engine
               </span>
             </div>
 
-            <h1 className="text-6xl font-black leading-tight tracking-tight">
+            <h1 className="text-7xl font-black leading-tight tracking-tight">
               Turn Notes Into
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">
                 Visual Intelligence
               </span>
             </h1>
 
-            <p className="text-zinc-400 text-lg mt-6 leading-relaxed max-w-2xl">
+            <p className="text-zinc-400 text-lg mt-6 leading-relaxed max-w-3xl">
               Upload PDFs, handwritten notes, research papers, or study
               material. The AI extracts concepts, generates flashcards,
               organizes topics, and builds mind maps automatically.
@@ -83,7 +354,10 @@ export default function App() {
           <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-8 w-full max-w-md shadow-2xl">
             <div className="flex items-center gap-3 mb-6">
               <Upload className="text-cyan-400" />
-              <h2 className="text-2xl font-bold">Upload Notes</h2>
+
+              <h2 className="text-2xl font-bold">
+                Upload Notes
+              </h2>
             </div>
 
             <label className="border-2 border-dashed border-zinc-700 rounded-3xl p-10 flex flex-col items-center justify-center cursor-pointer hover:border-cyan-400 transition-all bg-zinc-900/60">
@@ -107,14 +381,20 @@ export default function App() {
 
             {fileName && (
               <div className="mt-5 bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-                <p className="text-zinc-400 text-sm">Uploaded File</p>
-                <p className="font-medium mt-1 truncate">{fileName}</p>
+                <p className="text-zinc-400 text-sm">
+                  Uploaded File
+                </p>
+
+                <p className="font-medium mt-1 truncate">
+                  {fileName}
+                </p>
               </div>
             )}
 
             {loading && (
               <div className="mt-6 flex items-center gap-3 text-cyan-300">
                 <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+
                 AI is analyzing your document...
               </div>
             )}
@@ -124,10 +404,13 @@ export default function App() {
         {/* Features Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           {/* Topics */}
-          <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl hover:scale-[1.01] transition-transform">
+          <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-6">
               <BookOpen className="text-cyan-400" />
-              <h2 className="text-2xl font-bold">Topics</h2>
+
+              <h2 className="text-2xl font-bold">
+                Topics
+              </h2>
             </div>
 
             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
@@ -152,7 +435,10 @@ export default function App() {
           <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
             <div className="flex items-center gap-3 mb-6">
               <BrainCircuit className="text-fuchsia-400" />
-              <h2 className="text-2xl font-bold">Flashcards</h2>
+
+              <h2 className="text-2xl font-bold">
+                Flashcards
+              </h2>
             </div>
 
             <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2">
@@ -160,7 +446,7 @@ export default function App() {
                 data.flashcards.map((card, index) => (
                   <div
                     key={index}
-                    className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-6 hover:border-fuchsia-500 transition-all"
+                    className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-3xl p-6"
                   >
                     <p className="text-xs uppercase tracking-widest text-fuchsia-400 mb-2">
                       Question
@@ -187,61 +473,55 @@ export default function App() {
             </div>
           </div>
 
-          {/* Mind Map */}
+          {/* Mindmap */}
           <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-6">
-              <Network className="text-emerald-400" />
-              <h2 className="text-2xl font-bold">Mind Map</h2>
-            </div>
 
-            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
-              {Object.keys(data.mindmap).length > 0 ? (
-                Object.entries(data.mindmap).map(
-                  ([parent, children], index) => (
-                    <div
-                      key={index}
-                      className="bg-zinc-900 rounded-3xl border border-zinc-800 p-5"
-                    >
-                      <h3 className="text-xl font-bold text-emerald-300 mb-4">
-                        {parent}
-                      </h3>
+  <div className="flex items-center gap-3 mb-6">
 
-                      <div className="flex flex-wrap gap-3">
-                        {Object.entries(children).map(
-                          ([subTopic, points], idx) => (
-                            <div
-                              key={idx}
-                              className="bg-zinc-800 rounded-2xl p-4 border border-zinc-700"
-                            >
-                              <p className="font-semibold mb-2 text-cyan-300">
-                                {subTopic}
-                              </p>
+    <Network className="text-emerald-400" />
 
-                              <div className="flex flex-wrap gap-2">
-                                {points.map((point, i) => (
-                                  <span
-                                    key={i}
-                                    className="bg-zinc-700 px-3 py-1 rounded-full text-sm"
-                                  >
-                                    {point}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  )
-                )
-              ) : (
-                <div className="text-zinc-500 text-center py-20">
-                  Mind map visualization appears here
-                </div>
-              )}
-            </div>
-          </div>
+    <h2 className="text-2xl font-bold">
+      Interactive Mind Map
+    </h2>
+
+  </div>
+
+  <div className="h-[600px] rounded-3xl overflow-hidden border border-zinc-800">
+
+    {nodes.length > 0 ? (
+
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        fitView
+      >
+
+        <MiniMap />
+        <Controls />
+        <Background />
+
+      </ReactFlow>
+
+    ) : (
+
+      <div className="h-full flex items-center justify-center text-zinc-500">
+        Upload notes to generate mind maps
+      </div>
+
+    )}
+
+  </div>
+
+</div>
         </div>
+
+        {/* Floating Button */}
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 left-6 z-40 bg-cyan-400 hover:scale-110 transition-transform text-black px-6 py-4 rounded-full shadow-2xl font-bold"
+        >
+          💬 Ask AI
+        </button>
 
         {/* Bottom Banner */}
         <div className="bg-gradient-to-r from-cyan-500/10 to-fuchsia-500/10 border border-zinc-800 rounded-[2rem] p-8 backdrop-blur-xl">
