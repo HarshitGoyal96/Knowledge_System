@@ -5,6 +5,7 @@ from app.services.pdf_services import extract_text_from_pdf
 from app.services.semantic_service import semantic_search
 from app.services.chat_service import generate_answer
 from app.services.learning_service import generate_learning_content
+from app.services.chat_service import explain_topic
 
 router = APIRouter()
 @router.get("/health")
@@ -90,4 +91,21 @@ async def analyze_notes(file: UploadFile = File(...)):
 
     return {
         "analysis": result
+    }
+
+@router.post("/explain-node")
+async def explain_node(
+    file: UploadFile = File(...),
+    topic: str = Query(...)
+):
+
+    contents = await file.read()
+
+    text = extract_text_from_pdf(contents)
+
+    explanation = explain_topic(topic, text)
+
+    return {
+        "topic": topic,
+        "explanation": explanation
     }

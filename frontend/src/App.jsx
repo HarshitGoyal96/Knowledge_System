@@ -23,6 +23,9 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState(false);
   const [fullMindmap, setFullMindmap] = useState(false);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [nodeExplanation, setNodeExplanation] =
+  useState("");
 
   const [data, setData] = useState({
     topics: [],
@@ -255,6 +258,39 @@ const {
   nodes,
   edges,
 } = createMindMapNodes();
+const onNodeClick = async (_, node) => {
+
+  setSelectedNode(node);
+
+  if (!uploadedFile) return;
+
+  const formData = new FormData();
+
+  formData.append("file", uploadedFile);
+
+  try {
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/explain-node?topic=${node.data.label}`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const result = await response.json();
+
+    setNodeExplanation(
+      result.explanation
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+};
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
       {/* Background Glow */}
@@ -532,6 +568,7 @@ const {
   nodes={nodes}
   edges={edges}
   fitView
+  onNodeClick={onNodeClick}
   nodesDraggable={true}
   nodesConnectable={false}
   elementsSelectable={true}
@@ -540,6 +577,7 @@ const {
   fitViewOptions={{
     padding: 0.3,
   }}
+
 >
 
         <MiniMap />
@@ -618,24 +656,102 @@ const {
     <div className="flex-1">
 
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        fitView
-        nodesDraggable={true}
-        nodesConnectable={false}
-        elementsSelectable={true}
-        panOnDrag={true}
-        zoomOnScroll={true}
-        fitViewOptions={{
-          padding: 0.3,
-        }}
-      >
+  nodes={nodes}
+  edges={edges}
+  fitView
+  onNodeClick={onNodeClick}
+  nodesDraggable={true}
+  nodesConnectable={false}
+  elementsSelectable={true}
+  panOnDrag={true}
+  zoomOnScroll={true}
+  fitViewOptions={{
+    padding: 0.3,
+  }}
+>
+      
 
         <MiniMap />
         <Controls />
         <Background />
 
       </ReactFlow>
+
+    </div>
+
+  </div>
+
+)}
+{/* Node Explanation Panel */}
+
+{selectedNode && (
+
+  <div className="fixed right-6 top-6 w-[380px] bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-2xl z-[120] p-6">
+
+    <div className="flex items-center justify-between mb-6">
+
+      <h2 className="text-2xl font-bold text-cyan-400">
+        Concept Details
+      </h2>
+
+      <button
+        onClick={() => setSelectedNode(null)}
+        className="text-zinc-400 hover:text-white text-2xl"
+      >
+        ✕
+      </button>
+
+    </div>
+
+    <div className="space-y-5">
+
+      <div>
+
+        <p className="text-sm uppercase tracking-widest text-zinc-500 mb-2">
+          Topic
+        </p>
+
+        <h3 className="text-3xl font-bold">
+          {selectedNode.data.label}
+        </h3>
+
+      </div>
+
+      <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+
+        <p className="text-zinc-300 leading-relaxed">
+  {nodeExplanation || "Loading explanation..."}
+</p>
+
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+
+        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+
+          <p className="text-sm text-zinc-500 mb-2">
+            Node Type
+          </p>
+
+          <p className="font-semibold">
+            Knowledge Node
+          </p>
+
+        </div>
+
+        <div className="bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
+
+          <p className="text-sm text-zinc-500 mb-2">
+            AI Status
+          </p>
+
+          <p className="font-semibold text-emerald-400">
+            Connected
+          </p>
+
+        </div>
+
+      </div>
 
     </div>
 

@@ -39,3 +39,43 @@ Answer clearly and appropriately:
 )
 
     return response.choices[0].message.content
+
+
+
+def explain_topic(topic, text):
+
+    results = semantic_search(topic, text)
+
+    context = "\n".join(
+        [r["text"] for r in results]
+    )
+
+    prompt = f"""
+You are an AI tutor.
+
+Explain the following topic using the document context.
+
+Topic:
+{topic}
+
+Context:
+{context}
+
+Rules:
+- Explain clearly
+- Keep explanation concise
+- Use simple language
+- If possible include examples
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    )
+
+    return response.choices[0].message.content
