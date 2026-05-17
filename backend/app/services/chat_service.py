@@ -51,21 +51,23 @@ def explain_topic(topic, text):
     )
 
     prompt = f"""
-You are an AI tutor.
+You are an AI study assistant.
 
-Explain the following topic using the document context.
+Explain this concept VERY briefly.
+
+Rules:
+- Maximum 2 short sentences
+- Under 30 words
+- Simple and beginner friendly
+- No bullet points
+- No long explanations
+- No extra formatting
 
 Topic:
 {topic}
 
 Context:
 {context}
-
-Rules:
-- Explain clearly
-- Keep explanation concise
-- Use simple language
-- If possible include examples
 """
 
     response = client.chat.completions.create(

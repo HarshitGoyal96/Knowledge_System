@@ -22,7 +22,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [question, setQuestion] = useState("");
-
+  const [selectedMap, setSelectedMap] =
+  useState(null);
   const [messages, setMessages] = useState([]);
 
   const [chatOpen, setChatOpen] = useState(false);
@@ -183,188 +184,164 @@ const [isCorrect, setIsCorrect] =
   // CREATE MINDMAP
   // =========================
 
-  const createMindMapNodes = () => {
+const createMindMapNodes = () => {
 
-    const nodes = [];
+  const maps = [];
 
-    const edges = [];
+  let parentIndex = 0;
 
-    let parentIndex = 0;
+  Object.entries(data.mindmap).forEach(
+    ([parent, children]) => {
 
-    Object.entries(data.mindmap).forEach(
-      ([parent, children]) => {
+      const nodes = [];
+      const edges = [];
 
-        const parentId =
-          `parent-${parentIndex}`;
+      const parentId =
+        `parent-${parentIndex}`;
 
-        // MAIN NODE
+      // MAIN NODE
 
-        nodes.push({
-          id: parentId,
+      nodes.push({
+  id: parentId,
 
-          data: {
-            label: parent,
-          },
+  data: {
+    label: parent,
+  },
 
-          position: {
-            x: 700,
-            y: parentIndex * 700,
-          },
+  position: {
+    x: 250,
+    y: 40,
+  },
 
-          style: {
-            background: "#06b6d4",
-            color: "black",
-            border: "none",
-            padding: 18,
-            borderRadius: 18,
-            fontWeight: "bold",
-            fontSize: 18,
-            minWidth: 220,
-            textAlign: "center",
-            boxShadow:
-              "0 0 25px rgba(6,182,212,0.35)",
-          },
-        });
+  style: {
+    background: "#06b6d4",
+    color: "black",
+    border: "none",
+    padding: 10,
+    borderRadius: 18,
+    fontWeight: "bold",
+    fontSize: 13,
+    minWidth: 140,
+    textAlign: "center",
+  },
+});
 
-        let childIndex = 0;
+      let childIndex = 0;
 
-        Object.entries(children).forEach(
-          ([subTopic, points]) => {
+      Object.entries(children).forEach(
+        ([subTopic, points]) => {
 
-            const childId =
-              `${parentId}-${childIndex}`;
+          const childId =
+            `${parentId}-${childIndex}`;
 
-            // CHILD NODE
+          nodes.push({
+  id: childId,
 
-            nodes.push({
-              id: childId,
+  data: {
+    label: subTopic,
+  },
 
-              data: {
-                label: subTopic,
-              },
+  position: {
+    x: 80 + childIndex * 160,
+    y: 150,
+  },
 
-              position: {
-                x:
-                  250 +
-                  childIndex * 450,
+  style: {
+    background: "#18181b",
+    color: "white",
+    border: "1px solid #3f3f46",
+    padding: 8,
+    borderRadius: 14,
+    minWidth: 120,
+    textAlign: "center",
+  },
+});
 
-                y:
-                  parentIndex * 700 +
-                  220,
-              },
+          edges.push({
+            id:
+              `edge-${parentId}-${childId}`,
 
-              style: {
-                background: "#18181b",
-                color: "white",
-                border:
-                  "1px solid #3f3f46",
-                padding: 14,
-                borderRadius: 16,
-                minWidth: 200,
-                textAlign: "center",
-                boxShadow:
-                  "0 0 18px rgba(168,85,247,0.18)",
-              },
-            });
+            source: parentId,
 
-            // EDGE PARENT -> CHILD
+            target: childId,
 
-            edges.push({
-              id:
-                `edge-${parentId}-${childId}`,
+            animated: true,
 
-              source: parentId,
+            style: {
+              stroke: "#06b6d4",
+            },
+          });
 
-              target: childId,
+          points.forEach(
+            (point, pointIndex) => {
 
-              animated: true,
+              const pointId =
+                `${childId}-${pointIndex}`;
 
-              style: {
-                stroke: "#06b6d4",
-                strokeWidth: 2,
-              },
-            });
+              nodes.push({
+  id: pointId,
 
-            points.forEach(
-              (point, pointIndex) => {
+  data: {
+    label: point,
+  },
 
-                const pointId =
-                  `${childId}-${pointIndex}`;
+  position: {
+    x: 70 + childIndex * 160,
+    y: 260 + pointIndex * 70,
+  },
 
-                // POINT NODE
+  style: {
+    background: "#27272a",
+    color: "#d4d4d8",
+    border: "1px solid #3f3f46",
+    padding: 6,
+    borderRadius: 12,
+    fontSize: 10,
+    minWidth: 100,
+    textAlign: "center",
+  },
+});
 
-                nodes.push({
-                  id: pointId,
+              edges.push({
+                id:
+                  `edge-${childId}-${pointId}`,
 
-                  data: {
-                    label: point,
-                  },
+                source: childId,
 
-                  position: {
+                target: pointId,
 
-                    x:
-                      120 +
-                      childIndex * 500 +
-                      pointIndex * 220,
+                animated: true,
 
-                    y:
-                      parentIndex * 700 +
-                      420,
+                style: {
+                  stroke: "#a855f7",
+                },
+              });
 
-                  },
+            }
+          );
 
-                  style: {
-                    background: "#27272a",
-                    color: "#d4d4d8",
-                    border:
-                      "1px solid #3f3f46",
-                    padding: 10,
-                    borderRadius: 14,
-                    fontSize: 13,
-                    minWidth: 180,
-                    textAlign: "center",
-                  },
-                });
+          childIndex++;
 
-                // EDGE CHILD -> POINT
+        }
+      );
 
-                edges.push({
-                  id:
-                    `edge-${childId}-${pointId}`,
+      maps.push({
+        title: parent,
+        nodes,
+        edges,
+      });
 
-                  source: childId,
+      parentIndex++;
 
-                  target: pointId,
+    }
+  );
 
-                  animated: true,
+  return maps;
 
-                  style: {
-                    stroke: "#a855f7",
-                    strokeWidth: 2,
-                  },
-                });
+};
 
-              }
-            );
-
-            childIndex++;
-
-          }
-        );
-
-        parentIndex++;
-
-      }
-    );
-
-    return { nodes, edges };
-
-  };
-
-  const {
-    nodes,
-    edges,
-  } = createMindMapNodes();
+  const maps =
+  createMindMapNodes();
 
   // =========================
   // NODE CLICK
@@ -752,76 +729,141 @@ const checkAnswer = () => {
 
           {/* MINDMAP */}
 
-          <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
+          {/* MINDMAP SECTION */}
 
-            <div className="flex items-center justify-between mb-6">
+<div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
 
-              <div className="flex items-center gap-3">
+  {/* HEADER */}
 
-                <Network className="text-emerald-400" />
+  <div className="flex items-center justify-between mb-6">
 
-                <h2 className="text-2xl font-bold">
-                  Interactive Mind Map
-                </h2>
+    <div className="flex items-center gap-3">
 
-              </div>
+      <Network className="text-emerald-400" />
 
-              <div className="flex gap-3">
+      <h2 className="text-2xl font-bold">
+        Interactive Mind Maps
+      </h2>
 
-                <button
-                  onClick={exportMindmap}
-                  className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-4 py-2 rounded-xl text-sm transition-all"
-                >
-                  Export PNG 📸
-                </button>
+    </div>
 
-                <button
-                  onClick={() =>
-                    setFullMindmap(true)
-                  }
-                  className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-4 py-2 rounded-xl text-sm transition-all"
-                >
-                  Fullscreen ↗
-                </button>
+    <div className="flex gap-3">
 
-              </div>
+      <button
+        onClick={exportMindmap}
+        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-4 py-2 rounded-xl text-sm transition-all"
+      >
+        Export PNG 📸
+      </button>
 
-            </div>
+      <button
+        onClick={() =>
+          setFullMindmap(true)
+        }
+        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-4 py-2 rounded-xl text-sm transition-all"
+      >
+        Fullscreen ↗
+      </button>
 
-            <div
-              ref={mindmapRef}
-                className={`rounded-3xl overflow-hidden border border-zinc-800 ${
-    nodes.length > 0
-      ? "h-[600px]"
-      : "h-[120px]"
-  }`}
+    </div>
 
-            >
+  </div>
 
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                fitView
-                onNodeClick={onNodeClick}
-                nodesDraggable={true}
-                nodesConnectable={false}
-                elementsSelectable={true}
-                panOnDrag={true}
-                zoomOnScroll={true}
-                fitViewOptions={{
-                  padding: 0.3,
-                }}
-              >
+  {/* EMPTY STATE */}
 
-                <MiniMap />
-                <Controls />
-                <Background />
+  {maps.length === 0 ? (
 
-              </ReactFlow>
+    <div className="h-[120px] flex items-center justify-center rounded-3xl border border-zinc-800 text-zinc-500">
 
-            </div>
+      Upload notes to generate mind maps
 
-          </div>
+    </div>
+
+  ) : (
+
+    /* GRID COLLAGE */
+
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      {maps.map((map, index) => (
+
+        <div
+          key={index}
+          ref={mindmapRef}
+          className="rounded-3xl overflow-hidden border border-zinc-800 bg-black"
+        >
+
+
+          {/* MAP */}
+
+          <div
+  key={index}
+  onClick={() => setFullMindmap(true)}
+  className="group relative aspect-square rounded-[2rem] overflow-hidden border border-zinc-800 bg-zinc-950 hover:border-cyan-400 transition-all duration-300 cursor-pointer"
+>
+
+  {/* MINI MAP */}
+
+  <div className="absolute inset-0 scale-[0.65]">
+
+    <ReactFlow
+      nodes={map.nodes}
+      edges={map.edges}
+      fitView
+      nodesDraggable={false}
+      nodesConnectable={false}
+      elementsSelectable={false}
+      panOnDrag={false}
+      zoomOnScroll={false}
+      zoomOnPinch={false}
+      zoomOnDoubleClick={false}
+      proOptions={{
+        hideAttribution: true,
+      }}
+      fitViewOptions={{
+        padding: 4,
+      }}
+    >
+
+      <Background />
+
+    </ReactFlow>
+
+  </div>
+
+  {/* DARK OVERLAY */}
+
+  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-300" />
+
+  {/* TITLE */}
+
+  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/70 to-transparent">
+
+    <h3 className="text-lg font-bold text-white">
+
+      {map.title}
+
+    </h3>
+
+    <p className="text-xs text-zinc-400 mt-1">
+
+      AI Knowledge Graph
+
+    </p>
+
+  </div>
+
+</div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  )}
+
+</div>
 
         </div>
 
@@ -1052,7 +1094,7 @@ const checkAnswer = () => {
 
       {selectedNode && (
 
-        <div className="fixed right-6 top-6 w-[380px] bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-2xl z-[120] p-6">
+        <div className="fixed right-6 top-6 w-[380px] bg-zinc-950 border border-zinc-800 rounded-[2rem] shadow-2xl z-[300] p-6">
 
           <div className="flex items-center justify-between mb-6">
 
@@ -1215,34 +1257,153 @@ const checkAnswer = () => {
 </button>
 {/* FULLSCREEN MINDMAP */}
 
+{/* FULLSCREEN MINDMAP */}
+
 {fullMindmap && (
 
-  <div className="fixed inset-0 bg-black z-[100] flex flex-col">
+  <div className="fixed inset-0 bg-black z-[100] overflow-y-auto">
 
-    {/* TOP BAR */}
+    {/* HEADER */}
 
-    <div className="flex items-center justify-between p-5 border-b border-zinc-800 bg-zinc-950">
+    <div className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800 px-8 py-5 flex items-center justify-between">
 
-      <h2 className="text-3xl font-bold">
-        Interactive Mind Map 🌌
+      <h2 className="text-3xl font-black text-white">
+        AI Knowledge Graphs 🌌
       </h2>
 
       <button
-        onClick={() => setFullMindmap(false)}
-        className="bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-2xl border border-zinc-700"
+        onClick={() =>
+          setFullMindmap(false)
+        }
+        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-5 py-3 rounded-2xl"
       >
         Close ✕
       </button>
 
     </div>
 
-    {/* FULLSCREEN GRAPH */}
+    {/* GRID OF ALL MAPS */}
 
-    <div className="flex-1">
+    <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+      {maps.map((map, index) => (
+
+        <div
+          key={index}
+          className="bg-zinc-950 border border-zinc-800 rounded-[2rem] overflow-hidden"
+        >
+
+          {/* MAP HEADER */}
+
+          <div className="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+
+  <h3 className="text-xl font-bold">
+
+    {map.title}
+
+  </h3>
+
+  <div className="flex items-center gap-3">
+
+    <div className="text-xs text-zinc-500">
+
+      AI Mindmap
+
+    </div>
+
+    <button
+      onClick={() =>
+        setSelectedMap(map)
+      }
+      className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-2 rounded-xl text-xs transition-all"
+    >
+      Expand 🔍
+    </button>
+
+  </div>
+
+</div>
+
+       {/* MAP */}
+
+<div className="h-[350px]">
+
+  <ReactFlow
+    nodes={map.nodes}
+    edges={map.edges}
+    fitView
+    onNodeClick={onNodeClick}
+    nodesDraggable={true}
+    nodesConnectable={false}
+    elementsSelectable={true}
+    panOnDrag={true}
+    zoomOnScroll={true}
+    fitViewOptions={{
+      padding: 1.8,
+    }}
+  >
+
+    <Background />
+
+  </ReactFlow>
+
+</div>
+
+        </div>
+
+      ))}
+
+    </div>
+
+  </div>
+
+)}
+
+
+{/* SINGLE MAP EXPANSION */}
+
+{selectedMap && (
+
+  <div className="fixed inset-0 z-[200] bg-black">
+
+    {/* TOPBAR */}
+
+    <div className="h-20 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between px-8">
+
+      <div>
+
+        <h2 className="text-3xl font-black">
+
+          {selectedMap.title}
+
+        </h2>
+
+        <p className="text-zinc-500 text-sm mt-1">
+
+          Interactive AI Knowledge Graph
+
+        </p>
+
+      </div>
+
+      <button
+        onClick={() =>
+          setSelectedMap(null)
+        }
+        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-5 py-3 rounded-2xl"
+      >
+        Close ✕
+      </button>
+
+    </div>
+
+    {/* HUGE GRAPH */}
+
+    <div className="h-[calc(100vh-80px)]">
 
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={selectedMap.nodes}
+        edges={selectedMap.edges}
         fitView
         onNodeClick={onNodeClick}
         nodesDraggable={true}
@@ -1250,8 +1411,10 @@ const checkAnswer = () => {
         elementsSelectable={true}
         panOnDrag={true}
         zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={true}
         fitViewOptions={{
-          padding: 0.3,
+          padding: 0.5,
         }}
       >
 
