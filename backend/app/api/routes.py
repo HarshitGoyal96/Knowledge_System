@@ -7,7 +7,8 @@ from app.services.chat_service import generate_answer
 from app.services.learning_service import generate_learning_content
 from app.services.chat_service import explain_topic
 from app.services.chunk_service import chunk_text
-
+from app.models.message import Message
+from app.db.database import SessionLocal
 from app.services.vector_service import (
     store_chunks
 )
@@ -77,13 +78,42 @@ async def search_pdf(file: UploadFile = File(...), query: str = Query(...)):
 async def chat_pdf(file: UploadFile = File(...), query: str = Query(...)):
     content = await file.read()
     text = extract_text_from_pdf(content)
+    db = SessionLocal()
+    user_message = Message(
+    role="user",
+    content=query,
+    chat_id=1
+    )
 
+    db.add(user_message)
+
+    db.commit()
     answer = generate_answer(query, text)
+    ai_message = Message(
+    role="assistant",
+    content=answer,
+    chat_id=1
+    )
 
+    db.add(ai_message)
+
+    db.commit()
     return {
         "query": query,
         "answer": answer
     }
+
+@router.get("/chat-history/{chat_id}")
+def get_chat_history(chat_id: int):
+
+    db = SessionLocal()
+
+    messages = db.query(Message).filter(
+        Message.chat_id == chat_id
+    ).all()
+
+    return messages
+
 
 @router.post("/analyze-notes")
 async def analyze_notes(file: UploadFile = File(...)):

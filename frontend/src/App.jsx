@@ -43,7 +43,7 @@ export default function App() {
   const mindmapRef = useRef(null);
   const [quizMode, setQuizMode] =
   useState(false);
-
+const token = localStorage.getItem("token");
 const [currentQuestion, setCurrentQuestion] =
   useState(0);
 
@@ -523,7 +523,62 @@ const checkAnswer = () => {
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
 
       {/* Background */}
+      <div className="fixed top-6 right-6 z-[200]">
 
+  {token ? (
+
+    <button
+      onClick={() => {
+
+        localStorage.removeItem(
+          "token"
+        );
+
+        window.location.href = "/";
+
+      }}
+      className="
+        bg-cyan-400
+        hover:bg-cyan-300
+        text-black
+        font-bold
+        px-6
+        py-3
+        rounded-full
+        shadow-lg
+        transition-all
+      "
+    >
+      Logout
+    </button>
+
+  ) : (
+
+    <button
+      onClick={() => {
+
+        window.location.href =
+          "/login";
+
+      }}
+      className="
+        bg-cyan-400
+        hover:bg-cyan-300
+        text-black
+        font-bold
+        px-6
+        py-3
+        rounded-full
+        shadow-lg
+        transition-all
+      "
+    >
+      Login
+    </button>
+
+  )}
+
+</div>
       <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/20 blur-3xl rounded-full" />
 
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-fuchsia-500/20 blur-3xl rounded-full" />
@@ -1429,6 +1484,7 @@ const checkAnswer = () => {
   </div>
 
 )}
+
     </div>
 
   );

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-
+from sqlalchemy.orm import relationship
 from app.db.database import Base
 
 class User(Base):
@@ -21,5 +21,8 @@ class User(Base):
         String,
         unique=True
     )
-
+    workspaces = relationship(
+    "Workspace",
+    back_populates="user"
+    )
     password = Column(String)
