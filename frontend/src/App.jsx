@@ -40,6 +40,26 @@ export default function App() {
     useState("");
 
   const mindmapRef = useRef(null);
+  const [quizMode, setQuizMode] =
+  useState(false);
+
+const [currentQuestion, setCurrentQuestion] =
+  useState(0);
+
+const [showAnswer, setShowAnswer] =
+  useState(false);
+
+const [score, setScore] =
+  useState(0);
+
+  const [selectedOption, setSelectedOption] =
+  useState("");
+
+const [answerChecked, setAnswerChecked] =
+  useState(false);
+
+const [isCorrect, setIsCorrect] =
+  useState(false);
 
   const [data, setData] = useState({
     topics: [],
@@ -423,7 +443,104 @@ export default function App() {
     }
 
   };
+  const startQuiz = () => {
 
+  setQuizMode(true);
+
+  setCurrentQuestion(0);
+
+  setShowAnswer(false);
+
+  setScore(0);
+
+};
+
+const nextQuestion = () => {
+
+  if (
+    currentQuestion <
+    data.flashcards.length - 1
+  ) {
+
+    setCurrentQuestion(
+      currentQuestion + 1
+    );
+
+    setSelectedOption("");
+
+    setAnswerChecked(false);
+
+    setIsCorrect(false);
+
+  } else {
+
+    alert(
+      `Quiz Finished! Score: ${score}/${data.flashcards.length}`
+    );
+
+    setQuizMode(false);
+
+  }
+
+};
+
+const markCorrect = () => {
+
+  setScore(score + 1);
+
+  nextQuestion();
+
+};
+const getQuizOptions = () => {
+
+  if (
+    !data.flashcards[currentQuestion]
+  ) return [];
+
+  const correctAnswer =
+    data.flashcards[currentQuestion]
+      .answer;
+
+  const allAnswers =
+    data.flashcards.map(
+      (card) => card.answer
+    );
+
+  const wrongAnswers =
+    allAnswers
+      .filter(
+        (ans) =>
+          ans !== correctAnswer
+      )
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3);
+
+  const options = [
+    correctAnswer,
+    ...wrongAnswers,
+  ].sort(() => 0.5 - Math.random());
+
+  return options;
+
+};
+const checkAnswer = () => {
+
+  const correctAnswer =
+    data.flashcards[currentQuestion]
+      .answer;
+
+  const correct =
+    selectedOption === correctAnswer;
+
+  setIsCorrect(correct);
+
+  setAnswerChecked(true);
+
+  if (correct) {
+    setScore(score + 1);
+  }
+
+};
   return (
 
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -566,15 +683,30 @@ export default function App() {
 
           <div className="bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 rounded-[2rem] p-6 shadow-xl">
 
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center justify-between mb-6">
 
-              <BrainCircuit className="text-fuchsia-400" />
+  <div className="flex items-center gap-3">
 
-              <h2 className="text-2xl font-bold">
-                Flashcards
-              </h2>
+    <BrainCircuit className="text-fuchsia-400" />
 
-            </div>
+    <h2 className="text-2xl font-bold">
+      Flashcards
+    </h2>
+
+  </div>
+
+  {data.flashcards.length > 0 && (
+
+    <button
+      onClick={startQuiz}
+      className="bg-fuchsia-500 hover:bg-fuchsia-600 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+    >
+      Start Quiz 🧠
+    </button>
+
+  )}
+
+</div>
 
             <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2">
 
@@ -672,7 +804,228 @@ export default function App() {
         </div>
 
       </div>
+   {/* QUIZ MODE */}
 
+{quizMode && data.flashcards.length > 0 && (
+
+  <div className="fixed inset-0 bg-black/95 z-[150] flex items-center justify-center p-8">
+
+    <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-[2.5rem] p-10 shadow-2xl">
+
+      {/* TOP */}
+
+      <div className="flex items-center justify-between mb-10">
+
+        <div>
+
+          <h2 className="text-4xl font-black">
+            AI Quiz Mode 🧠
+          </h2>
+
+          <p className="text-zinc-500 mt-2">
+            Question {currentQuestion + 1}
+            / {data.flashcards.length}
+          </p>
+
+        </div>
+
+        <button
+          onClick={() => setQuizMode(false)}
+          className="bg-zinc-900 hover:bg-zinc-800 px-5 py-3 rounded-2xl border border-zinc-700"
+        >
+          Exit ✕
+        </button>
+
+      </div>
+
+      {/* PROGRESS */}
+
+      <div className="mb-10">
+
+        <div className="bg-zinc-900 rounded-full h-4 overflow-hidden">
+
+          <div
+            className="bg-fuchsia-500 h-full transition-all duration-500"
+            style={{
+              width: `${
+                ((currentQuestion + 1) /
+                  data.flashcards.length) *
+                100
+              }%`,
+            }}
+          />
+
+        </div>
+
+      </div>
+
+      {/* QUESTION CARD */}
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] p-10 mb-10">
+
+        <p className="text-fuchsia-400 uppercase tracking-widest text-sm mb-4">
+          Question
+        </p>
+
+        <h3 className="text-3xl font-bold leading-relaxed text-white">
+
+          {
+            data.flashcards[currentQuestion]
+              .question
+          }
+
+        </h3>
+
+      </div>
+
+      {/* OPTIONS */}
+
+      <div className="space-y-4 mb-10">
+
+        {getQuizOptions().map(
+          (option, index) => (
+
+            <button
+              key={index}
+              onClick={() =>
+                !answerChecked &&
+                setSelectedOption(option)
+              }
+              className={`w-full text-left p-5 rounded-2xl border transition-all duration-300 ${
+                selectedOption === option
+                  ? "border-cyan-400 bg-cyan-400/10"
+                  : "border-zinc-800 bg-zinc-900 hover:border-zinc-600"
+              }`}
+            >
+
+              <div className="flex items-center gap-4">
+
+                <div className={`w-6 h-6 rounded-full border flex items-center justify-center ${
+                  selectedOption === option
+                    ? "border-cyan-400 bg-cyan-400"
+                    : "border-zinc-600"
+                }`}>
+
+                  {selectedOption === option && (
+                    <div className="w-2 h-2 bg-black rounded-full" />
+                  )}
+
+                </div>
+
+                <p className="text-lg text-zinc-200">
+                  {option}
+                </p>
+
+              </div>
+
+            </button>
+
+          )
+        )}
+
+      </div>
+
+      {/* RESULT */}
+
+      {answerChecked && (
+
+        <div
+          className={`mb-8 p-6 rounded-2xl border ${
+            isCorrect
+              ? "bg-emerald-500/10 border-emerald-500/30"
+              : "bg-red-500/10 border-red-500/30"
+          }`}
+        >
+
+          <h3 className="text-2xl font-bold mb-3">
+
+            {isCorrect
+              ? "Correct Answer ✅"
+              : "Wrong Answer ❌"}
+
+          </h3>
+
+          {!isCorrect && (
+
+            <p className="text-zinc-300 text-lg">
+
+              Correct Answer:
+
+              <span className="text-cyan-400 ml-2 font-semibold">
+
+                {
+                  data.flashcards[currentQuestion]
+                    .answer
+                }
+
+              </span>
+
+            </p>
+
+          )}
+
+        </div>
+
+      )}
+
+      {/* ACTION BUTTONS */}
+
+      <div className="flex gap-4">
+
+        {!answerChecked ? (
+
+          <button
+            onClick={checkAnswer}
+            disabled={!selectedOption}
+            className="bg-cyan-400 text-black px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform disabled:opacity-40 disabled:hover:scale-100"
+          >
+            Check Answer
+          </button>
+
+        ) : (
+
+          <button
+            onClick={nextQuestion}
+            className="bg-fuchsia-500 px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform"
+          >
+            Next Question →
+          </button>
+
+        )}
+
+      </div>
+
+      {/* SCORE */}
+
+      <div className="mt-10 flex items-center justify-between">
+
+        <div className="text-zinc-400 text-lg">
+
+          Current Score:
+
+          <span className="text-white font-bold ml-2 text-2xl">
+
+            {score}
+
+          </span>
+
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 px-5 py-3 rounded-2xl">
+
+          <span className="text-fuchsia-400 font-semibold">
+            AI Powered Quiz Engine
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+)}
       {/* NODE PANEL */}
 
       {selectedNode && (
