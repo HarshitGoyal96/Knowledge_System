@@ -27,8 +27,7 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] =
   useState([]);
-  const [allChats, setAllChats] =
-  useState([]);
+
   const [chatId, setChatId] =
   useState(1);
   const [chatOpen, setChatOpen] = useState(false);
@@ -543,7 +542,12 @@ const fetchChatHistory = async () => {
 
 };
 
+useEffect(() => {
 
+  fetchChatHistory();
+  fetchAllChats();
+
+}, [chatId]);
 const fetchAllChats = async () => {
 
   const response = await fetch(
@@ -571,15 +575,6 @@ const createNewChat = async () => {
   fetchAllChats();
 
 };
-useEffect(() => {
-
-  if (chatId) {
-
-    fetchChatHistory();
-
-  }
-
-}, [chatId]);
   return (
 
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
@@ -647,121 +642,7 @@ useEffect(() => {
 
       {/* MAIN CONTENT */}
 
-      <div className="relative z-10 flex">
-        {/* WORKSPACE SIDEBAR */}
-
-<div className="w-[340px] h-screen border-r border-zinc-800 bg-zinc-950/80 backdrop-blur-xl p-5 flex flex-col sticky top-0">
-
-  <div className="mb-8">
-
-    <h1 className="text-3xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-fuchsia-500 bg-clip-text text-transparent">
-      AI Workspace
-    </h1>
-
-    <p className="text-zinc-500 mt-2 text-sm">
-      Persistent AI Memory 🌌
-    </p>
-
-  </div>
-
-  {/* NEW CHAT */}
-
-  <button
-    onClick={createNewChat}
-    className="bg-cyan-400 text-black font-bold py-4 rounded-2xl mb-6 hover:scale-[1.02] transition-all shadow-lg"
-  >
-    + New Chat
-  </button>
-
-  {/* CHAT LIST */}
-
-  <div className="flex flex-col gap-3 overflow-y-auto max-h-[250px] pr-1 mb-6">
-
-    {allChats.map((chat) => (
-
-      <button
-        key={chat.id}
-        onClick={() => {
-
-          setChatId(chat.id);
-
-        }}
-        className={`p-4 rounded-2xl border text-left transition-all ${
-          chatId === chat.id
-            ? "bg-cyan-400 text-black border-cyan-400"
-            : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800 text-white"
-        }`}
-      >
-
-        <p className="font-semibold truncate">
-
-          {chat.title || `Chat ${chat.id}`}
-
-        </p>
-
-      </button>
-
-    ))}
-
-  </div>
-
-  {/* CHAT AREA */}
-
-  <div className="flex-1 flex flex-col border-t border-zinc-800 pt-5 min-h-0">
-
-    <div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-1">
-
-      {chatHistory.map((msg, index) => (
-
-        <div
-          key={index}
-          className={`max-w-[90%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-            msg.role === "user"
-              ? "bg-cyan-400 text-black self-end"
-              : "bg-zinc-900 border border-zinc-800 text-zinc-200 self-start"
-          }`}
-        >
-
-          {msg.content}
-
-        </div>
-
-      ))}
-
-    </div>
-
-    {/* INPUT */}
-
-    <div className="mt-4 flex gap-3">
-
-      <input
-        type="text"
-        value={question}
-        onChange={(e) =>
-          setQuestion(e.target.value)
-        }
-        placeholder="Ask anything..."
-        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 outline-none"
-      />
-
-      <button
-        onClick={askQuestion}
-        className="bg-cyan-400 text-black font-bold px-5 rounded-2xl"
-      >
-        Ask
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-{/* MAIN CONTENT */}
-
-<div className="flex-1 px-8 py-10 overflow-y-auto">
-
-
+      <div className="relative z-10 px-8 py-10">
 
         {/* HERO */}
 
@@ -1366,7 +1247,127 @@ useEffect(() => {
         </div>
 
       )}
+      {/* AI SIDEBAR */}
 
+<div
+  className={`fixed top-0 left-0 h-screen w-[430px] bg-zinc-950 border-r border-zinc-800 z-50 transform transition-transform duration-500 shadow-2xl flex flex-col ${
+    chatOpen ? "translate-x-0" : "-translate-x-full"
+  }`}
+>
+
+  {/* HEADER */}
+
+  <div className="flex items-center justify-between p-6 border-b border-zinc-800 bg-black">
+
+    <div>
+
+      <h2 className="text-3xl font-bold text-white">
+        AI Assistant 💬
+      </h2>
+
+      <p className="text-zinc-500 text-sm mt-2">
+        Chat with your uploaded notes
+      </p>
+
+    </div>
+
+    <button
+      onClick={() => setChatOpen(false)}
+      className="text-zinc-400 hover:text-white text-3xl"
+    >
+      ✕
+    </button>
+
+  </div>
+
+  {/* MESSAGES */}
+
+  <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+    {chatHistory.length === 0 && (
+
+      <div className="text-center mt-24">
+
+        <div className="text-7xl mb-6">
+          🧠
+        </div>
+
+        <h3 className="text-3xl font-bold mb-4">
+          Your AI Study Assistant
+        </h3>
+
+        <p className="text-zinc-500 leading-relaxed">
+          Upload PDFs and ask anything about your notes.
+        </p>
+
+      </div>
+
+    )}
+
+    {chatHistory.map((msg, index) => (
+
+  <div
+    key={index}
+    className={`flex ${
+      msg.role === "user"
+        ? "justify-end"
+        : "justify-start"
+    }`}
+  >
+
+    <div
+      className={`max-w-[85%] px-5 py-4 rounded-3xl whitespace-pre-wrap leading-relaxed shadow-xl ${
+        msg.role === "user"
+          ? "bg-cyan-400 text-black rounded-br-md"
+          : "bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-bl-md"
+      }`}
+    >
+
+      {msg.content}
+
+    </div>
+
+  </div>
+
+))}
+
+  </div>
+
+  {/* INPUT */}
+
+  <div className="border-t border-zinc-800 p-5 bg-black">
+
+    <div className="flex gap-3">
+
+      <input
+        type="text"
+        placeholder="Ask anything..."
+        value={question}
+        onChange={(e) => setQuestion(e.target.value)}
+        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-2xl px-5 py-4 outline-none text-white"
+      />
+
+      <button
+        onClick={askQuestion}
+        className="bg-cyan-400 text-black px-5 py-4 rounded-2xl font-bold hover:scale-105 transition-transform"
+      >
+        Ask
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+{/* FLOATING ASK AI BUTTON */}
+
+<button
+  onClick={() => setChatOpen(true)}
+  className="fixed bottom-6 left-6 z-40 bg-cyan-400 hover:scale-110 transition-transform text-black px-6 py-4 rounded-full shadow-2xl font-bold"
+>
+  💬 Ask AI
+</button>
+{/* FULLSCREEN MINDMAP */}
 
 {/* FULLSCREEN MINDMAP */}
 
@@ -1542,7 +1543,6 @@ useEffect(() => {
 )}
 
     </div>
-  </div>
 
   );
 

@@ -174,3 +174,26 @@ def get_all_chats():
     chats = db.query(Chat).all()
 
     return chats
+
+@router.delete("/delete-chat/{chat_id}")
+def delete_chat(chat_id: int):
+
+    db = SessionLocal()
+
+    chat = db.query(Chat).filter(
+        Chat.id == chat_id
+    ).first()
+
+    if not chat:
+
+        return {
+            "error": "Chat not found"
+        }
+
+    db.delete(chat)
+
+    db.commit()
+
+    return {
+        "message": "Chat deleted"
+    }
