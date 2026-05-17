@@ -1,14 +1,17 @@
 from groq import Groq
 from app.services.semantic_service import semantic_search
-
+from app.services.vector_service import (
+    search_chunks
+)
 from dotenv import load_dotenv
 import os
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def generate_answer(query, text):
-    results = semantic_search(query, text)
-    context = "\n".join([r["text"] for r in results])
+    results = search_chunks(query)
+
+    context = "\n".join(results)
     print("Context:", context)
     prompt = f"""
 You are an intelligent document assistant.
@@ -44,30 +47,30 @@ Answer clearly and appropriately:
 
 def explain_topic(topic, text):
 
-    results = semantic_search(topic, text)
+    results = search_chunks(topic)
 
-    context = "\n".join(
-        [r["text"] for r in results]
-    )
+    context = "\n".join(results)
+    
 
     prompt = f"""
-You are an AI study assistant.
+You are an AI concept explainer.
 
-Explain this concept VERY briefly.
+Explain the topic briefly using ONLY the context.
 
 Rules:
-- Maximum 2 short sentences
+- Maximum 2 sentences
 - Under 30 words
-- Simple and beginner friendly
-- No bullet points
-- No long explanations
-- No extra formatting
+- Ignore unrelated text
+- No extra details
+- No formatting
 
 Topic:
 {topic}
 
 Context:
 {context}
+
+Explanation:
 """
 
     response = client.chat.completions.create(

@@ -6,7 +6,11 @@ from app.services.semantic_service import semantic_search
 from app.services.chat_service import generate_answer
 from app.services.learning_service import generate_learning_content
 from app.services.chat_service import explain_topic
+from app.services.chunk_service import chunk_text
 
+from app.services.vector_service import (
+    store_chunks
+)
 router = APIRouter()
 @router.get("/health")
 def health_check():
@@ -86,7 +90,9 @@ async def analyze_notes(file: UploadFile = File(...)):
     content = await file.read()
 
     text = extract_text_from_pdf(content)
+    chunks = chunk_text(text)
 
+    store_chunks(chunks)
     result = generate_learning_content(text)
 
     return {
