@@ -8,6 +8,7 @@ from app.services.learning_service import generate_learning_content
 from app.services.chat_service import explain_topic
 from app.services.chunk_service import chunk_text
 from app.models.message import Message
+from app.models.chat import Chat
 from app.db.database import SessionLocal
 from app.services.vector_service import (
     store_chunks
@@ -75,14 +76,14 @@ async def search_pdf(file: UploadFile = File(...), query: str = Query(...)):
         return {"error": str(e)}
 
 @router.post("/chat-pdf")
-async def chat_pdf(file: UploadFile = File(...), query: str = Query(...)):
+async def chat_pdf(file: UploadFile = File(...), query: str = Query(...),chat_id: int = Query(...)):
     content = await file.read()
     text = extract_text_from_pdf(content)
     db = SessionLocal()
     user_message = Message(
     role="user",
     content=query,
-    chat_id=1
+    chat_id=chat_id
     )
 
     db.add(user_message)
@@ -145,3 +146,31 @@ async def explain_node(
         "topic": topic,
         "explanation": explanation
     }
+@router.post("/create-chat")
+def create_chat():
+
+    db = SessionLocal()
+
+    new_chat = Chat(
+        title="New Chat",
+        workspace_id=1
+    )
+
+    db.add(new_chat)
+
+    db.commit()
+
+    db.refresh(new_chat)
+
+    return {
+        "chat_id": new_chat.id,
+        "title": new_chat.title
+    }
+@router.get("/all-chats")
+def get_all_chats():
+
+    db = SessionLocal()
+
+    chats = db.query(Chat).all()
+
+    return chats
