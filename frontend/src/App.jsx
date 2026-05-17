@@ -662,7 +662,11 @@ const checkAnswer = () => {
 
             </div>
 
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            <div  className={`space-y-3 overflow-y-auto pr-2 ${
+    data.topics.length > 0
+      ? "max-h-[500px]"
+      : "h-[120px]"
+  }`}>
 
               {data.topics.map((topic, index) => (
 
@@ -674,6 +678,11 @@ const checkAnswer = () => {
                 </div>
 
               ))}
+              {data.topics.length === 0 && (
+  <div className="h-full flex items-center justify-center text-zinc-500">
+    Upload notes to generate topics
+  </div>
+)}
 
             </div>
 
@@ -708,7 +717,11 @@ const checkAnswer = () => {
 
 </div>
 
-            <div className="space-y-5 max-h-[500px] overflow-y-auto pr-2">
+            <div  className={`space-y-5 overflow-y-auto pr-2 ${
+    data.flashcards.length > 0
+      ? "max-h-[500px]"
+      : "h-[120px]"
+  }`}>
 
               {data.flashcards.map((card, index) => (
 
@@ -728,7 +741,11 @@ const checkAnswer = () => {
                 </div>
 
               ))}
-
+              {data.flashcards.length === 0 && (
+  <div className="h-full flex items-center justify-center text-zinc-500">
+    Flashcards will appear here
+  </div>
+)}
             </div>
 
           </div>
@@ -773,7 +790,12 @@ const checkAnswer = () => {
 
             <div
               ref={mindmapRef}
-              className="h-[600px] rounded-3xl overflow-hidden border border-zinc-800"
+                className={`rounded-3xl overflow-hidden border border-zinc-800 ${
+    nodes.length > 0
+      ? "h-[600px]"
+      : "h-[120px]"
+  }`}
+
             >
 
               <ReactFlow
