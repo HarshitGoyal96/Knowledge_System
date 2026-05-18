@@ -27,7 +27,11 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] =
   useState([]);
+  const [showHistory, setShowHistory] =
+  useState(false);
 
+  const [savedHistory, setSavedHistory] =
+  useState([]);
   const [chatId, setChatId] =
   useState(1);
   const [chatOpen, setChatOpen] = useState(false);
@@ -524,6 +528,8 @@ const checkAnswer = () => {
 };
 const fetchChatHistory = async () => {
 
+  if (!token) return;
+
   try {
 
     const response = await fetch(
@@ -532,7 +538,9 @@ const fetchChatHistory = async () => {
 
     const data = await response.json();
 
-    setChatHistory(data);
+    setSavedHistory(data);
+
+    setShowHistory(true);
 
   } catch (error) {
 
@@ -544,8 +552,11 @@ const fetchChatHistory = async () => {
 
 useEffect(() => {
 
-  fetchChatHistory();
-  fetchAllChats();
+  if (token) {
+
+    fetchAllChats();
+
+  }
 
 }, [chatId]);
 const fetchAllChats = async () => {
@@ -586,12 +597,12 @@ const createNewChat = async () => {
 
     <button
       onClick={() => {
-
-        localStorage.removeItem(
-          "token"
-        );
-
-        window.location.href = "/";
+              localStorage.removeItem("token");
+              setChatHistory([]);
+              setSavedHistory([]);
+              setChatHistory(false);
+              setMessages([]);
+              window.location.href = "/";
 
       }}
       className="
@@ -1265,9 +1276,24 @@ const createNewChat = async () => {
         AI Assistant 💬
       </h2>
 
-      <p className="text-zinc-500 text-sm mt-2">
-        Chat with your uploaded notes
-      </p>
+      <div className="flex items-center justify-between mt-2">
+
+          <p className="text-zinc-500 text-sm">
+           Chat with your uploaded notes
+          </p>
+
+          {token && (
+
+            <button
+              onClick={fetchChatHistory}
+              className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-full transition-all"
+            >
+             Load History
+            </button>
+
+         )}
+
+</div>
 
     </div>
 
@@ -1284,7 +1310,7 @@ const createNewChat = async () => {
 
   <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-    {chatHistory.length === 0 && (
+    {!showHistory && chatHistory.length === 0 && (
 
       <div className="text-center mt-24">
 
@@ -1304,7 +1330,7 @@ const createNewChat = async () => {
 
     )}
 
-    {chatHistory.map((msg, index) => (
+    {(showHistory ? savedHistory : chatHistory).map((msg, index) => (
 
   <div
     key={index}
