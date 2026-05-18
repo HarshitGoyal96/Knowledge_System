@@ -1,75 +1,150 @@
-from sentence_transformers import SentenceTransformer
-import numpy as np
+import chromadb
+import uuid
 import re
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+from sentence_transformers import SentenceTransformer
+
+# EMBEDDING MODEL
+
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)
+
+# CHROMADB CLIENT
+
+client = chromadb.PersistentClient(
+    path="./chroma_db"
+)
+
+collection = client.get_or_create_collection(
+    name="pdf_memory"
+)
+
+# CLEAN TEXT
 
 def clean_chunk(text):
-    text = re.sub(r'[^a-zA-Z0-9\s.,:]', ' ', text)
-    text = re.sub(r'\s+', ' ', text)
+
+    text = re.sub(
+        r'[^a-zA-Z0-9\\s.,:]',
+        ' ',
+        text
+    )
+
+    text = re.sub(
+        r'\\s+',
+        ' ',
+        text
+    )
+
     return text.lower().strip()
 
+# SPLIT TEXT
 
-def preprocess_text(text):
-    lines = text.split("\n")
+def split_text(text, chunk_size=120):
 
-    clean_lines = []
-
-    for line in lines:
-        line = line.strip()
-
-        if len(line.split()) < 4:  # relaxed filter
-            continue
-
-        clean_lines.append(line)
-
-    return " ".join(clean_lines)
-
-
-def split_text(text, chunk_size=40):
     words = text.split()
 
     chunks = []
 
-    for i in range(0, len(words), chunk_size):
-        chunk = " ".join(words[i:i+chunk_size])
+    for i in range(
+        0,
+        len(words),
+        chunk_size
+    ):
+
+        chunk = " ".join(
+            words[i:i + chunk_size]
+        )
+
         chunk = clean_chunk(chunk)
 
-        if len(chunk) > 30:
+        if len(chunk) > 40:
+
             chunks.append(chunk)
 
     return chunks
 
+# STORE PDF CHUNKS
 
-def semantic_search(query, text, top_k=3):
-
-    query = clean_chunk(query)
-
-    text = preprocess_text(text)
+def store_pdf_chunks(
+    text,
+    filename
+):
 
     chunks = split_text(text)
 
-    if not chunks:
-        return []
+    embeddings = model.encode(
+        chunks
+    ).tolist()
 
+    for chunk, embedding in zip(
+        chunks,
+        embeddings
+    ):
 
-    query_embedding = model.encode(query, normalize_embeddings=True)
-    chunk_embeddings = model.encode(chunks, normalize_embeddings=True)
+        collection.add(
 
-    similarities = []
+            documents=[chunk],
 
-    for i, emb in enumerate(chunk_embeddings):
-        score = np.dot(query_embedding, emb)
-        similarities.append((chunks[i], score))
+            embeddings=[embedding],
 
-    similarities.sort(key=lambda x: x[1], reverse=True)
+            ids=[str(uuid.uuid4())],
 
-    results = [
-        {
-            "text": chunk[:180],
-            "score": round(float(score), 3)
-        }
-        for chunk, score in similarities[:top_k]
-    ]
+            metadatas=[
+                {
+                    "source":  str(filename)
+                }
+            ]
 
-    return results
+        )
+
+# SEARCH CHUNKS
+
+def search_chunks(
+    query,
+    top_k=4
+):
+
+    query_embedding = model.encode(
+        query
+    ).tolist()
+
+    results = collection.query(
+
+        query_embeddings=[
+            query_embedding
+        ],
+
+        n_results=top_k
+
+    )
+
+    documents = results["documents"][0]
+
+    metadatas = results["metadatas"][0]
+
+    formatted_results = []
+
+    for i in range(len(documents)):
+
+        doc = documents[i]
+
+        meta = metadatas[i]
+
+        # SAFETY FIX
+
+        if isinstance(meta, str):
+
+            meta = {
+                "source": meta
+            }
+
+        formatted_results.append({
+
+            "text": doc,
+
+            "metadata": meta
+
+        })
+
+    return formatted_results

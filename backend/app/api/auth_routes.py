@@ -5,6 +5,7 @@ from app.models.user import User
 from sqlalchemy.orm import Session
 from app.models.workspace import Workspace
 from app.models.pdf_document import PDFDocument
+from app.models.pdf import PDF
 from app.models.auth_schema import (
     SignupSchema,
     LoginSchema

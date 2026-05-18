@@ -1,5 +1,5 @@
 from groq import Groq
-from app.services.semantic_service import semantic_search
+from app.services.semantic_service import search_chunks
 from app.services.vector_service import (
     search_chunks
 )
@@ -9,22 +9,58 @@ load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def generate_answer(query, text):
+
     results = search_chunks(query)
 
-    context = "\n".join(results)
+    # HANDLE CHROMADB RESULTS
+
+    context_parts = []
+
+    for item in results:
+
+        # IF ITEM IS DICTIONARY
+
+        if isinstance(item, dict):
+
+            text_chunk = item.get(
+                "text",
+                ""
+            )
+
+            metadata = item.get(
+                "metadata",
+                {}
+            )
+
+            source = metadata.get(
+                "source",
+                "Unknown PDF"
+            )
+
+        # IF ITEM IS STRING
+
+        else:
+
+            text_chunk = str(item)
+
+            source = "Uploaded PDF"
+
+        context_parts.append(
+
+            f"Source: {source}\n{text_chunk}"
+
+        )
+
+    context = "\n".join(
+        context_parts
+    )
+
     print("Context:", context)
+
     prompt = f"""
-You are an intelligent document assistant.
+You are an intelligent AI study assistant.
 
-Your task is to answer the question using the given context.
-
-Guidelines:
-- Understand the type of document (resume, article, notes, etc.)
-- Extract relevant information accordingly
-- If asked about skills → list skills
-- If asked for summary → summarize
-- If asked about concepts → explain clearly
-- If answer is not directly written → infer from context
+Answer the question using the provided document context.
 
 Context:
 {context}
@@ -32,16 +68,35 @@ Context:
 Question:
 {query}
 
-Answer clearly and appropriately:
+Rules:
+- Answer clearly
+- Keep response concise
+- Use simple language
+- If answer is unavailable, say so
 """
 
-
     response = client.chat.completions.create(
-    model="llama-3.1-8b-instant",   # ✅ FIXED
-    messages=[{"role": "user", "content": prompt}]
-)
 
-    return response.choices[0].message.content
+        model="llama-3.1-8b-instant",
+
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+
+        stream=True
+
+    )
+
+    for chunk in response:
+
+        content = chunk.choices[0].delta.content
+
+        if content:
+
+            yield content
 
 
 
@@ -80,7 +135,14 @@ Explanation:
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        stream = True
     )
 
-    return response.choices[0].message.content
+    for chunk in response:
+
+        content = chunk.choices[0].delta.content
+
+        if content:
+
+            yield content

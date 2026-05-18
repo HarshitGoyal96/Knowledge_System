@@ -2,13 +2,19 @@ from fastapi import APIRouter,UploadFile, File,Query
 from app.services.nlp_services import extract_keywords, extract_summary, highlight_words,analyze_large_text
 from app.services.ocr_services import extract_text
 from app.services.pdf_services import extract_text_from_pdf
-from app.services.semantic_service import semantic_search
+from app.models.pdf import PDF
+from app.services.semantic_service import (
+    search_chunks,
+    store_pdf_chunks,
+    collection
+)
 from app.services.chat_service import generate_answer
 from app.services.learning_service import generate_learning_content
 from app.services.chat_service import explain_topic
 from app.services.chunk_service import chunk_text
 from app.models.message import Message
 from app.models.chat import Chat
+from fastapi.responses import StreamingResponse
 from app.db.database import SessionLocal
 from app.services.vector_service import (
     store_chunks
@@ -44,66 +50,123 @@ async def analyze(file: UploadFile = File(...)):
     }
 
 @router.post("/upload-pdf")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(
+    file: UploadFile = File(...)
+):
+
     content = await file.read()
 
     text = extract_text_from_pdf(content)
-    keywords = analyze_large_text(text)
+    store_pdf_chunks(
+    text,
+    file.filename
+    )       
+
+    db = SessionLocal()
+
+    new_pdf = PDF(
+        filename=file.filename,
+        content=text
+    )
+
+    db.add(new_pdf)
+
+    db.commit()
 
     return {
-        "pages_processed": 10,
-        "keywords": keywords
+        "message": "PDF uploaded",
+        "filename": file.filename
     }
     
+
 @router.post("/search-pdf")
-async def search_pdf(file: UploadFile = File(...), query: str = Query(...)):
+async def search_pdf(
+    query: str = Query(...)
+):
+
     try:
-        content = await file.read()
 
-        print("Query:", query)
+        results = search_chunks(query)
 
-        text = extract_text_from_pdf(content)
+        formatted_results = [
 
-        results = semantic_search(query, text)
+            {
+                "text": text,
+                "source": meta["source"]
+            }
+
+            for text, meta in results
+
+        ]
 
         return {
+
             "query": query,
-            "results": results
+
+            "results": formatted_results
+
         }
 
     except Exception as e:
+
         print("ERROR:", str(e))
-        return {"error": str(e)}
+
+        return {
+            "error": str(e)
+        }
 
 @router.post("/chat-pdf")
-async def chat_pdf(file: UploadFile = File(...), query: str = Query(...),chat_id: int = Query(...)):
-    content = await file.read()
-    text = extract_text_from_pdf(content)
+async def chat_pdf(
+    query: str = Query(...),
+    chat_id: int = Query(...)
+):
+
     db = SessionLocal()
+
+    # SAVE USER MESSAGE
+
     user_message = Message(
-    role="user",
-    content=query,
-    chat_id=chat_id
+        role="user",
+        content=query,
+        chat_id=chat_id
     )
 
     db.add(user_message)
 
     db.commit()
-    answer = generate_answer(query, text)
-    ai_message = Message(
-    role="assistant",
-    content=answer,
-    chat_id=1
+
+    # STREAM RESPONSE
+
+    def generate_stream():
+
+        full_answer = ""
+
+        for chunk in generate_answer(
+            query,
+            ""
+        ):
+
+            full_answer += chunk
+
+            yield chunk
+
+        # SAVE AI MESSAGE
+
+        ai_message = Message(
+            role="assistant",
+            content=full_answer,
+            chat_id=chat_id
+        )
+
+        db.add(ai_message)
+
+        db.commit()
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/plain"
     )
-
-    db.add(ai_message)
-
-    db.commit()
-    return {
-        "query": query,
-        "answer": answer
-    }
-
+    
 @router.get("/chat-history/{chat_id}")
 def get_chat_history(chat_id: int):
 
@@ -196,4 +259,51 @@ def delete_chat(chat_id: int):
 
     return {
         "message": "Chat deleted"
+    }
+@router.delete("/clear-history/{chat_id}")
+def clear_history(chat_id: int):
+
+    db = SessionLocal()
+
+    messages = db.query(Message).filter(
+        Message.chat_id == chat_id
+    ).all()
+
+    for message in messages:
+
+        db.delete(message)
+
+    db.commit()
+
+    return {
+        "message": "History cleared"
+    }
+    
+@router.get("/list-pdfs")
+def list_pdfs():
+
+    results = collection.get()
+
+    metadatas = results["metadatas"]
+
+    pdfs = list(
+
+        set(
+
+            [
+
+                meta["source"]
+
+                for meta in metadatas
+
+                if meta and "source" in meta
+
+            ]
+
+        )
+
+    )
+
+    return {
+        "pdfs": pdfs
     }

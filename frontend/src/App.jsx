@@ -27,11 +27,8 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [chatHistory, setChatHistory] =
   useState([]);
-  const [showHistory, setShowHistory] =
-  useState(false);
 
-  const [savedHistory, setSavedHistory] =
-  useState([]);
+
   const [chatId, setChatId] =
   useState(1);
   const [chatOpen, setChatOpen] = useState(false);
@@ -80,113 +77,205 @@ const [isCorrect, setIsCorrect] =
   // FILE UPLOAD
   // =========================
 
-  const handleUpload = async (e) => {
+ const handleUpload = async (e) => {
 
-    const file = e.target.files[0];
+  const files = Array.from(
+    e.target.files
+  );
+  setUploadedFile(files[0]);
 
-    if (!file) return;
+  if (!files.length) return;
 
-    setFileName(file.name);
+  setLoading(true);
 
-    setUploadedFile(file);
+  try {
 
-    setLoading(true);
+    // STORE PDFs IN VECTOR DB
 
-    const formData = new FormData();
+    for (const file of files) {
 
-    formData.append("file", file);
+      const uploadForm =
+        new FormData();
 
-    try {
+      uploadForm.append(
+        "file",
+        file
+      );
 
-      const response = await fetch(
-        "http://127.0.0.1:8000/analyze-notes",
+      await fetch(
+        "http://127.0.0.1:8000/upload-pdf",
         {
           method: "POST",
-          body: formData,
+          body: uploadForm,
         }
       );
 
-      const result = await response.json();
-
-      const parsed =
-        result.analysis || result;
-
-      setData({
-        topics: parsed.topics || [],
-        flashcards:
-          parsed.flashcards || [],
-        mindmap: parsed.mindmap || {},
-      });
-
-    } catch (error) {
-
-      console.error(error);
-
-      alert("Failed to analyze notes");
-
     }
 
-    setLoading(false);
+    // ANALYZE FIRST PDF
 
-  };
+    const analyzeForm =
+      new FormData();
+
+    analyzeForm.append(
+      "file",
+      files[0]
+    );
+
+    const response = await fetch(
+      "http://127.0.0.1:8000/analyze-notes",
+      {
+        method: "POST",
+        body: analyzeForm,
+      }
+    );
+
+    const result =
+      await response.json();
+
+    setData(result.analysis);
+
+    alert(
+      "PDFs uploaded successfully 🚀"
+    );
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+  setLoading(false);
+
+};
 
   // =========================
   // CHAT WITH PDF
   // =========================
 
-  const askQuestion = async () => {
+ const askQuestion = async () => {
 
-    if (!uploadedFile || !question) {
-      return;
-    }
+  if (!question.trim()) return;
 
-    const userMessage = {
-      role: "user",
-      content: question,
-    };
+  // CREATE USER MESSAGE
 
-    setMessages((prev) => [
-      ...prev,
-      userMessage,
-    ]);
+  const userMessage = {
 
-    const currentQuestion = question;
+    role: "user",
 
-    setQuestion("");
-
-    const formData = new FormData();
-
-    formData.append("file", uploadedFile);
-
-    try {
-
-      const response = await fetch(
-        `http://127.0.0.1:8000/chat-pdf?query=${currentQuestion}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
-
-      const result = await response.json();
-
-      const aiMessage = {
-        role: "assistant",
-        content: result.answer,
-      };
-
-      setMessages((prev) => [
-        ...prev,
-        aiMessage,
-      ]);
-      fetchChatHistory();
-    } catch (error) {
-
-      console.error(error);
-
-    }
+    content: question,
 
   };
+
+  // ADD USER MESSAGE
+
+  setMessages((prev) => [
+
+    ...prev,
+
+    userMessage,
+
+  ]);
+
+  const currentQuestion = question;
+
+  setQuestion("");
+
+  try {
+
+    const response = await fetch(
+
+      `http://127.0.0.1:8000/chat-pdf?query=${encodeURIComponent(currentQuestion)}&chat_id=${chatId}`,
+
+      {
+
+        method: "POST",
+
+      }
+
+    );
+
+    // STREAM READER
+
+    const reader =
+      response.body.getReader();
+
+    const decoder =
+      new TextDecoder();
+
+    let aiText = "";
+
+    // ADD EMPTY AI MESSAGE FIRST
+
+    setMessages((prev) => [
+
+      ...prev,
+
+      {
+
+        role: "assistant",
+
+        content: "",
+
+      },
+
+    ]);
+
+    while (true) {
+
+      const {
+
+        done,
+
+        value
+
+      } = await reader.read();
+
+      if (done) break;
+
+      const chunk =
+        decoder.decode(value);
+
+      aiText += chunk;
+
+      // UPDATE LAST MESSAGE LIVE
+
+      setMessages((prev) => {
+
+        const updated = [...prev];
+
+        // UPDATE LAST AI MESSAGE
+
+        updated[
+          updated.length - 1
+        ] = {
+
+          role: "assistant",
+
+          content: aiText,
+
+        };
+
+        return updated;
+
+      });
+
+    }
+
+    // OPTIONAL REFRESH HISTORY
+
+    fetchChatHistory();
+
+  } catch (error) {
+
+    console.error(
+      "Streaming Error:",
+      error
+    );
+
+  }
+
+};
 
   // =========================
   // CREATE MINDMAP
@@ -528,19 +617,21 @@ const checkAnswer = () => {
 };
 const fetchChatHistory = async () => {
 
-  if (!token) return;
+  if (!token || !chatId) return;
 
   try {
 
     const response = await fetch(
+
       `http://127.0.0.1:8000/chat-history/${chatId}`
+
     );
 
     const data = await response.json();
 
-    setSavedHistory(data);
+    // UPDATE MAIN CHAT STATE
 
-    setShowHistory(true);
+    setMessages(data);
 
   } catch (error) {
 
@@ -584,6 +675,30 @@ const createNewChat = async () => {
   setChatId(data.chat_id);
 
   fetchAllChats();
+
+};
+const clearHistory = async () => {
+
+  try {
+
+    await fetch(
+      `http://127.0.0.1:8000/clear-history/${chatId}`,
+      {
+        method: "DELETE",
+      }
+    );
+
+    setSavedHistory([]);
+
+    setShowHistory(false);
+
+    setChatHistory([]);
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
 
 };
   return (
@@ -719,6 +834,7 @@ const createNewChat = async () => {
                 type="file"
                 accept="application/pdf"
                 className="hidden"
+                multiple
                 onChange={handleUpload}
               />
 
@@ -1278,20 +1394,35 @@ const createNewChat = async () => {
 
       <div className="flex items-center justify-between mt-2">
 
-          <p className="text-zinc-500 text-sm">
-           Chat with your uploaded notes
-          </p>
+  <p className="text-zinc-500 text-sm">
+    Chat with your uploaded notes
+  </p>
 
-          {token && (
+  {token && (
 
-            <button
-              onClick={fetchChatHistory}
-              className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-full transition-all"
-            >
-             Load History
-            </button>
+    <div className="flex gap-2">
 
-         )}
+      {/* LOAD HISTORY */}
+
+      <button
+        onClick={fetchChatHistory}
+        className="text-xs bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 px-3 py-1 rounded-full transition-all"
+      >
+        Load History
+      </button>
+
+      {/* CLEAR */}
+
+      <button
+        onClick={clearHistory}
+        className="text-xs bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 px-3 py-1 rounded-full transition-all"
+      >
+        Clear
+      </button>
+
+    </div>
+
+  )}
 
 </div>
 
@@ -1310,7 +1441,7 @@ const createNewChat = async () => {
 
   <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-    {!showHistory && chatHistory.length === 0 && (
+    {messages.length === 0 && (
 
       <div className="text-center mt-24">
 
@@ -1330,7 +1461,7 @@ const createNewChat = async () => {
 
     )}
 
-    {(showHistory ? savedHistory : chatHistory).map((msg, index) => (
+    {messages.map((msg, index) => (
 
   <div
     key={index}
@@ -1350,7 +1481,13 @@ const createNewChat = async () => {
     >
 
       {msg.content}
+      {msg.role === "assistant" && (
+    <span className="animate-pulse">
+      ▋
+    </span>
+  )}             {/* CLEAR HISTORY */}
 
+  
     </div>
 
   </div>
