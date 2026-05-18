@@ -6,6 +6,8 @@ from app.models.pdf import PDF
 from app.services.semantic_service import (
     search_chunks,
     store_pdf_chunks,
+    get_all_documents,
+    get_relevant_documents,
     collection
 )
 from app.services.chat_service import generate_answer
@@ -16,9 +18,7 @@ from app.models.message import Message
 from app.models.chat import Chat
 from fastapi.responses import StreamingResponse
 from app.db.database import SessionLocal
-from app.services.vector_service import (
-    store_chunks
-)
+
 router = APIRouter()
 @router.get("/health")
 def health_check():
@@ -56,26 +56,17 @@ async def upload_pdf(
 
     content = await file.read()
 
-    text = extract_text_from_pdf(content)
-    store_pdf_chunks(
-    text,
-    file.filename
-    )       
-
-    db = SessionLocal()
-
-    new_pdf = PDF(
-        filename=file.filename,
-        content=text
+    text = extract_text_from_pdf(
+        content
     )
 
-    db.add(new_pdf)
-
-    db.commit()
+    store_pdf_chunks(
+        text,
+        file.filename
+    )
 
     return {
-        "message": "PDF uploaded",
-        "filename": file.filename
+        "message": "PDF uploaded"
     }
     
 
@@ -180,35 +171,35 @@ def get_chat_history(chat_id: int):
 
 
 @router.post("/analyze-notes")
-async def analyze_notes(file: UploadFile = File(...)):
-    content = await file.read()
+async def analyze_notes():
 
-    text = extract_text_from_pdf(content)
-    chunks = chunk_text(text)
+    # GET ALL PDF TEXT FROM CHROMADB
 
-    store_chunks(chunks)
-    result = generate_learning_content(text)
+    text = get_relevant_documents()
 
-    return {
-        "analysis": result
-    }
+    # GENERATE AI CONTENT
+
+    result = generate_learning_content(
+        text
+    )
+
+    return result
 
 @router.post("/explain-node")
 async def explain_node(
-    file: UploadFile = File(...),
     topic: str = Query(...)
 ):
 
-    contents = await file.read()
+    return StreamingResponse(
 
-    text = extract_text_from_pdf(contents)
+        explain_topic(
+            topic,
+            ""
+        ),
 
-    explanation = explain_topic(topic, text)
+        media_type="text/plain"
 
-    return {
-        "topic": topic,
-        "explanation": explanation
-    }
+    )
 @router.post("/create-chat")
 def create_chat():
 
@@ -306,4 +297,24 @@ def list_pdfs():
 
     return {
         "pdfs": pdfs
+    }
+@router.post("/reset-memory")
+async def reset_memory():
+
+    # GET ALL IDS
+
+    results = collection.get()
+
+    ids = results["ids"]
+
+    # DELETE ALL DOCUMENTS
+
+    if ids:
+
+        collection.delete(
+            ids=ids
+        )
+
+    return {
+        "message": "Memory cleared"
     }

@@ -1,67 +1,67 @@
-import chromadb
+# import chromadb
 
-from sentence_transformers import (
-    SentenceTransformer
-)
+# from sentence_transformers import (
+#     SentenceTransformer
+# )
 
-# EMBEDDING MODEL
+# # EMBEDDING MODEL
 
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+# embedding_model = SentenceTransformer(
+#     "all-MiniLM-L6-v2"
+# )
 
-# CHROMA DATABASE
+# # CHROMA DATABASE
 
-client = chromadb.PersistentClient(
-    path="./chroma_db"
-)
+# client = chromadb.PersistentClient(
+#     path="./chroma_db"
+# )
 
-collection = client.get_or_create_collection(
-    name="study_material"
-)
+# collection = client.get_or_create_collection(
+#     name="study_material"
+# )
 
-# STORE CHUNKS
+# # STORE CHUNKS
 
-def store_chunks(chunks):
+# def store_chunks(chunks):
 
-    # clear old data first
+#     # clear old data first
 
-    try:
-        existing =collection.get()
+#     try:
+#         existing =collection.get()
 
-        if existing["ids"]:
-            collection.delete(
-                ids=existing["ids"]
-            )
+#         if existing["ids"]:
+#             collection.delete(
+#                 ids=existing["ids"]
+#             )
 
-    except:
-        pass
+#     except:
+#         pass
 
-    for i, chunk in enumerate(chunks):
+#     for i, chunk in enumerate(chunks):
 
-        embedding =embedding_model.encode(
-                chunk
-            ).tolist()
+#         embedding =embedding_model.encode(
+#                 chunk
+#             ).tolist()
 
-        collection.add(
-            ids=[str(i)],
-            documents=[chunk],
-            embeddings=[embedding]
-        )
+#         collection.add(
+#             ids=[str(i)],
+#             documents=[chunk],
+#             embeddings=[embedding]
+#         )
 
-# SEARCH CHUNKS
+# # SEARCH CHUNKS
 
-def search_chunks(query, n_results=3):
+# def search_chunks(query, n_results=3):
 
-    query_embedding =embedding_model.encode(
-            query
-        ).tolist()
+#     query_embedding =embedding_model.encode(
+#             query
+#         ).tolist()
 
-    results =collection.query(
-            query_embeddings=[
-                query_embedding
-            ],
-            n_results=n_results
-        )
+#     results =collection.query(
+#             query_embeddings=[
+#                 query_embedding
+#             ],
+#             n_results=n_results
+#         )
 
-    return results["documents"][0]
+#     return results["documents"][0]

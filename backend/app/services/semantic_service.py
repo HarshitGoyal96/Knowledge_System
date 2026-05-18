@@ -40,7 +40,7 @@ def clean_chunk(text):
 
 # SPLIT TEXT
 
-def split_text(text, chunk_size=120):
+def split_text(text, chunk_size=300):
 
     words = text.split()
 
@@ -58,7 +58,7 @@ def split_text(text, chunk_size=120):
 
         chunk = clean_chunk(chunk)
 
-        if len(chunk) > 40:
+        if len(chunk.split()) > 40:
 
             chunks.append(chunk)
 
@@ -102,11 +102,12 @@ def store_pdf_chunks(
 
 def search_chunks(
     query,
-    top_k=4
+    top_k=5
 ):
 
     query_embedding = model.encode(
-        query
+        query,
+        normalize_embeddings=True
     ).tolist()
 
     results = collection.query(
@@ -115,7 +116,13 @@ def search_chunks(
             query_embedding
         ],
 
-        n_results=top_k
+        n_results=top_k,
+
+        include=[
+            "documents",
+            "metadatas",
+            "distances"
+        ]
 
     )
 
@@ -123,28 +130,53 @@ def search_chunks(
 
     metadatas = results["metadatas"][0]
 
+    distances = results["distances"][0]
+
     formatted_results = []
 
-    for i in range(len(documents)):
+    for doc, meta, distance in zip(
+        documents,
+        metadatas,
+        distances
+    ):
 
-        doc = documents[i]
+        # IGNORE WEAK RESULTS
 
-        meta = metadatas[i]
-
-        # SAFETY FIX
-
-        if isinstance(meta, str):
-
-            meta = {
-                "source": meta
-            }
+        if distance > 2:           
+            continue
 
         formatted_results.append({
 
             "text": doc,
 
-            "metadata": meta
+            "metadata": meta,
+
+            "distance": distance
 
         })
 
+    print("SEARCH RESULTS:")
+    print(formatted_results)
+
     return formatted_results
+
+
+def get_all_documents():
+    
+
+    results = collection.get()
+
+    documents = results["documents"]
+
+    return "\n".join(documents)
+def get_relevant_documents(
+    top_k=20
+):
+
+    results = collection.get()
+
+    documents = results["documents"]
+
+    return "\n".join(
+        documents[:top_k]
+    )

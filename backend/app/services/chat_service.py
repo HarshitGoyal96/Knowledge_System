@@ -1,8 +1,6 @@
 from groq import Groq
 from app.services.semantic_service import search_chunks
-from app.services.vector_service import (
-    search_chunks
-)
+
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -104,8 +102,34 @@ def explain_topic(topic, text):
 
     results = search_chunks(topic)
 
-    context = "\n".join(results)
-    
+    context_parts = []
+
+    for item in results:
+
+        text_chunk = item.get(
+            "text",
+            ""
+        )
+
+        metadata = item.get(
+            "metadata",
+            {}
+        )
+
+        source = metadata.get(
+            "source",
+            "Unknown PDF"
+        )
+
+        context_parts.append(
+
+            f"Source: {source}\n{text_chunk}"
+
+        )
+
+    context = "\n".join(
+        context_parts
+    )
 
     prompt = f"""
 You are an AI concept explainer.
@@ -129,14 +153,18 @@ Explanation:
 """
 
     response = client.chat.completions.create(
+
         model="llama-3.1-8b-instant",
+
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        stream = True
+
+        stream=True
+
     )
 
     for chunk in response:

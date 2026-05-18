@@ -36,8 +36,8 @@ export default function App() {
   const [fullMindmap, setFullMindmap] =
     useState(false);
 
-  const [uploadedFile, setUploadedFile] =
-    useState(null);
+  const [uploadedFiles, setUploadedFiles] =
+  useState([]);
 
   const [selectedNode, setSelectedNode] =
     useState(null);
@@ -82,7 +82,6 @@ const [isCorrect, setIsCorrect] =
   const files = Array.from(
     e.target.files
   );
-  setUploadedFile(files[0]);
 
   if (!files.length) return;
 
@@ -90,9 +89,49 @@ const [isCorrect, setIsCorrect] =
 
   try {
 
-    // STORE PDFs IN VECTOR DB
+    // CLEAR OLD UI DATA
+
+    setData({
+
+      topics: [],
+
+      flashcards: [],
+
+      mindmap: {}
+
+    });
+
+    // CLEAR OLD PDF LIST
+
+    setUploadedFiles([]);
+
+    // CLEAR OLD VECTOR MEMORY
+
+    await fetch(
+
+      "http://127.0.0.1:8000/reset-memory",
+
+      {
+
+        method: "POST",
+
+      }
+
+    );
+
+    // STORE PDFs
 
     for (const file of files) {
+
+      // SHOW PDF IN UI
+
+      setUploadedFiles((prev) => [
+
+        ...prev,
+
+        file.name
+
+      ]);
 
       const uploadForm =
         new FormData();
@@ -103,41 +142,52 @@ const [isCorrect, setIsCorrect] =
       );
 
       await fetch(
+
         "http://127.0.0.1:8000/upload-pdf",
+
         {
+
           method: "POST",
+
           body: uploadForm,
+
         }
+
       );
 
     }
 
-    // ANALYZE FIRST PDF
-
-    const analyzeForm =
-      new FormData();
-
-    analyzeForm.append(
-      "file",
-      files[0]
-    );
+    // ANALYZE ALL NEW PDFs
 
     const response = await fetch(
+
       "http://127.0.0.1:8000/analyze-notes",
+
       {
+
         method: "POST",
-        body: analyzeForm,
+
       }
+
     );
 
     const result =
       await response.json();
 
-    setData(result.analysis);
+    // FRESH UI UPDATE
 
-    alert(
-      "PDFs uploaded successfully 🚀"
-    );
+    setData({
+
+      topics:
+        result.topics || [],
+
+      flashcards:
+        result.flashcards || [],
+
+      mindmap:
+        result.mindmap || {}
+
+    });
 
   } catch (error) {
 
@@ -148,7 +198,6 @@ const [isCorrect, setIsCorrect] =
   setLoading(false);
 
 };
-
   // =========================
   // CHAT WITH PDF
   // =========================
@@ -446,40 +495,74 @@ const createMindMapNodes = () => {
 
   const onNodeClick = async (_, node) => {
 
-    setSelectedNode(node);
+  setSelectedNode(node);
 
-    setNodeExplanation("");
+  setNodeExplanation(
+    "Loading explanation..."
+  );
 
-    if (!uploadedFile) return;
+  try {
 
-    const formData = new FormData();
+    const response = await fetch(
 
-    formData.append("file", uploadedFile);
+      `http://127.0.0.1:8000/explain-node?topic=${encodeURIComponent(
+        node.data.label
+      )}`,
 
-    try {
+      {
 
-      const response = await fetch(
-        `http://127.0.0.1:8000/explain-node?topic=${node.data.label}`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+        method: "POST",
 
-      const result =
-        await response.json();
+      }
+
+    );
+
+    // STREAM READER
+
+    const reader =
+      response.body.getReader();
+
+    const decoder =
+      new TextDecoder();
+
+    let fullText = "";
+
+    while (true) {
+
+      const {
+
+        done,
+
+        value
+
+      } = await reader.read();
+
+      if (done) break;
+
+      const chunk =
+        decoder.decode(value);
+
+      fullText += chunk;
+
+      // LIVE UPDATE
 
       setNodeExplanation(
-        result.explanation
+        fullText
       );
-
-    } catch (error) {
-
-      console.error(error);
 
     }
 
-  };
+  } catch (error) {
+
+    console.error(error);
+
+    setNodeExplanation(
+      "Failed to load explanation."
+    );
+
+  }
+
+};
 
   // =========================
   // EXPORT PNG
@@ -839,6 +922,48 @@ const clearHistory = async () => {
               />
 
             </label>
+            {/* UPLOADED FILES */}
+
+{uploadedFiles.length > 0 && (
+
+  <div className="mt-6 space-y-3">
+
+    <p className="text-zinc-400 text-sm font-semibold">
+
+      Uploaded PDFs
+
+    </p>
+
+    {uploadedFiles.map((file, index) => (
+
+      <div
+        key={index}
+        className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between"
+      >
+
+        <div className="flex items-center gap-3">
+
+          <span className="text-cyan-400 text-xl">
+            📄
+          </span>
+
+          <span className="text-zinc-200">
+            {file}
+          </span>
+
+        </div>
+
+        <span className="text-green-400 text-sm">
+          Uploaded
+        </span>
+
+      </div>
+
+    ))}
+
+  </div>
+
+)}
 
             {fileName && (
 
@@ -859,6 +984,7 @@ const clearHistory = async () => {
           </div>
 
         </div>
+        
 
         {/* GRID */}
 
@@ -878,7 +1004,7 @@ const clearHistory = async () => {
 
             </div>
 
-            <div  className={`space-y-3 overflow-y-auto pr-2 ${
+            <div  className={`space-y-3 overflow-y-auto custom-scrollbar pr-2 ${
     data.topics.length > 0
       ? "max-h-[500px]"
       : "h-[120px]"
@@ -933,7 +1059,7 @@ const clearHistory = async () => {
 
 </div>
 
-            <div  className={`space-y-5 overflow-y-auto pr-2 ${
+            <div  className={`space-y-5 overflow-y-auto custom-scrollbar pr-2 ${
     data.flashcards.length > 0
       ? "max-h-[500px]"
       : "h-[120px]"
@@ -1022,7 +1148,7 @@ const clearHistory = async () => {
 
     /* GRID COLLAGE */
 
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto custom-scrollbar max-h-[650px] pr-2">
 
       {maps.map((map, index) => (
 
