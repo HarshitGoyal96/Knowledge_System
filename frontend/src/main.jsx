@@ -10,8 +10,8 @@ import {
 
 import "./index.css";
 
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+import Login from "./pages/login";
+import Signup from "./pages/signup";
 import Dashboard from "./pages/Dashboard";
 
 ReactDOM.createRoot(
