@@ -27,7 +27,7 @@ import ReactFlow, {
 
 import "reactflow/dist/style.css";
 
-
+function App(){
 // =========================
 // STATES
 // =========================
@@ -793,7 +793,7 @@ const clearHistory = async () => {
               localStorage.removeItem("token");
               setChatHistory([]);
               setSavedHistory([]);
-              setChatHistory(false);
+              
               setMessages([]);
               window.location.href = "/";
 
@@ -960,21 +960,7 @@ const clearHistory = async () => {
 
 )}
 
-            {fileName && (
-
-              <div className="mt-5 bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-
-                <p className="text-zinc-400 text-sm">
-                  Uploaded File
-                </p>
-
-                <p className="font-medium mt-1 truncate">
-                  {fileName}
-                </p>
-
-              </div>
-
-            )}
+            
 
           </div>
 
@@ -1603,14 +1589,13 @@ const clearHistory = async () => {
     >
 
       {msg.content}
-      {msg.role === "assistant" && 
-      isStreaming &&
-      index === messages.length - 1(
+      {msg.role === "assistant" &&
+  isStreaming &&
+  index === messages.length - 1 && (
     <span className="animate-pulse">
       ▋
     </span>
-  )}             {/* CLEAR HISTORY */}
-
+)}
   
     </div>
 
@@ -1878,3 +1863,5 @@ const clearHistory = async () => {
   );
 
 
+}
+export default App;
