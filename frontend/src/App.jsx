@@ -779,6 +779,11 @@ const clearHistory = async () => {
   }
 
 };
+const exportMindmap = () => {
+
+  alert("Export feature coming soon 🚀");
+
+};
   return (
 
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
