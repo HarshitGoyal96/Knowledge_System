@@ -1,5 +1,15 @@
+// =========================
+// IMPORTS
+// =========================
+
 import * as htmlToImage from "html-to-image";
-import { useState, useRef , useEffect } from "react";
+
+import {
+  useState,
+  useRef,
+  useEffect,
+  useMemo,
+} from "react";
 
 import {
   Upload,
@@ -17,38 +27,56 @@ import ReactFlow, {
 
 import "reactflow/dist/style.css";
 
-export default function App() {
 
-  const [loading, setLoading] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [question, setQuestion] = useState("");
-  const [selectedMap, setSelectedMap] =
-  useState(null);
-  const [messages, setMessages] = useState([]);
-  const [chatHistory, setChatHistory] =
-  useState([]);
+// =========================
+// STATES
+// =========================
 
-
-  const [chatId, setChatId] =
-  useState(0);
-  const [chatOpen, setChatOpen] = useState(false);
-
-  const [fullMindmap, setFullMindmap] =
-    useState(false);
-
-  const [uploadedFiles, setUploadedFiles] =
-  useState([]);
-
-  const [selectedNode, setSelectedNode] =
-    useState(null);
-
-  const [nodeExplanation, setNodeExplanation] =
-    useState("");
-
-  const mindmapRef = useRef(null);
-  const [quizMode, setQuizMode] =
+const [loading, setLoading] =
   useState(false);
-const token = localStorage.getItem("token");
+
+const [question, setQuestion] =
+  useState("");
+
+const [selectedMap, setSelectedMap] =
+  useState(null);
+
+const [messages, setMessages] =
+  useState([]);
+
+const [chatHistory, setChatHistory] =
+  useState([]);
+
+const [savedHistory, setSavedHistory] =
+  useState([]);
+
+const [showHistory, setShowHistory] =
+  useState(false);
+
+const [allChats, setAllChats] =
+  useState([]);
+
+const [chatId, setChatId] =
+  useState(0);
+
+const [chatOpen, setChatOpen] =
+  useState(false);
+
+const [fullMindmap, setFullMindmap] =
+  useState(false);
+
+const [uploadedFiles, setUploadedFiles] =
+  useState([]);
+
+const [selectedNode, setSelectedNode] =
+  useState(null);
+
+const [nodeExplanation, setNodeExplanation] =
+  useState("");
+
+const [quizMode, setQuizMode] =
+  useState(false);
+
 const [currentQuestion, setCurrentQuestion] =
   useState(0);
 
@@ -58,7 +86,7 @@ const [showAnswer, setShowAnswer] =
 const [score, setScore] =
   useState(0);
 
-  const [selectedOption, setSelectedOption] =
+const [selectedOption, setSelectedOption] =
   useState("");
 
 const [answerChecked, setAnswerChecked] =
@@ -67,37 +95,68 @@ const [answerChecked, setAnswerChecked] =
 const [isCorrect, setIsCorrect] =
   useState(false);
 
-  const [data, setData] = useState({
+const [isStreaming, setIsStreaming] =
+  useState(false);
+
+const mindmapRef = useRef(null);
+
+const token =
+  localStorage.getItem("token");
+
+const [data, setData] =
+  useState({
+
     topics: [],
+
     flashcards: [],
+
     mindmap: {},
+
   });
+
+
+// =========================
+// AUTH EFFECT
+// =========================
+
 useEffect(() => {
 
   if (token) {
 
-    // LOGGED IN USER
-
     setChatId(1);
 
   } else {
-
-    // GUEST USER
 
     setChatId(0);
 
   }
 
 }, [token]);
-  // =========================
-  // FILE UPLOAD
-  // =========================
 
- const handleUpload = async (e) => {
 
-  const files = Array.from(
-    e.target.files
-  );
+// =========================
+// FETCH ALL CHATS
+// =========================
+
+useEffect(() => {
+
+  if (token) {
+
+    fetchAllChats();
+
+  }
+
+}, [chatId]);
+
+
+// =========================
+// HANDLE PDF UPLOAD
+// =========================
+
+const handleUpload = async (e) => {
+
+  const files =
+    Array.from(e.target.files);
 
   if (!files.length) return;
 
@@ -105,7 +164,7 @@ useEffect(() => {
 
   try {
 
-    // CLEAR OLD UI DATA
+    // CLEAR OLD DATA
 
     setData({
 
@@ -113,19 +172,17 @@ useEffect(() => {
 
       flashcards: [],
 
-      mindmap: {}
+      mindmap: {},
 
     });
 
-    // CLEAR OLD PDF LIST
-
     setUploadedFiles([]);
 
-    // CLEAR OLD VECTOR MEMORY
+    // RESET VECTOR DB
 
     await fetch(
 
-      "http://127.0.0.1:8000/reset-memory",
+      `${import.meta.env.VITE_API_URL}/reset-memory`,
 
       {
 
@@ -135,37 +192,35 @@ useEffect(() => {
 
     );
 
-    // STORE PDFs
+    // UPLOAD FILES
 
     for (const file of files) {
-
-      // SHOW PDF IN UI
 
       setUploadedFiles((prev) => [
 
         ...prev,
 
-        file.name
+        file.name,
 
       ]);
 
-      const uploadForm =
+      const formData =
         new FormData();
 
-      uploadForm.append(
+      formData.append(
         "file",
         file
       );
 
       await fetch(
 
-        "http://127.0.0.1:8000/upload-pdf",
+        `${import.meta.env.VITE_API_URL}/upload-pdf`,
 
         {
 
           method: "POST",
 
-          body: uploadForm,
+          body: formData,
 
         }
 
@@ -173,24 +228,23 @@ useEffect(() => {
 
     }
 
-    // ANALYZE ALL NEW PDFs
+    // ANALYZE PDFs
 
-    const response = await fetch(
+    const response =
+      await fetch(
 
-      "http://127.0.0.1:8000/analyze-notes",
+        `${import.meta.env.VITE_API_URL}/analyze-notes`,
 
-      {
+        {
 
-        method: "POST",
+          method: "POST",
 
-      }
+        }
 
-    );
+      );
 
     const result =
       await response.json();
-
-    // FRESH UI UPDATE
 
     setData({
 
@@ -201,7 +255,7 @@ useEffect(() => {
         result.flashcards || [],
 
       mindmap:
-        result.mindmap || {}
+        result.mindmap || {},
 
     });
 
@@ -214,15 +268,15 @@ useEffect(() => {
   setLoading(false);
 
 };
-  // =========================
-  // CHAT WITH PDF
-  // =========================
 
- const askQuestion = async () => {
+
+// =========================
+// ASK QUESTION
+// =========================
+
+const askQuestion = async () => {
 
   if (!question.trim()) return;
-
-  // CREATE USER MESSAGE
 
   const userMessage = {
 
@@ -232,8 +286,6 @@ useEffect(() => {
 
   };
 
-  // ADD USER MESSAGE
-
   setMessages((prev) => [
 
     ...prev,
@@ -242,25 +294,37 @@ useEffect(() => {
 
   ]);
 
-  const currentQuestion = question;
+  const currentQuestion =
+    question;
 
   setQuestion("");
 
   try {
 
-    const response = await fetch(
+    setIsStreaming(true);
 
-      `http://127.0.0.1:8000/chat-pdf?query=${encodeURIComponent(currentQuestion)}&chat_id=${chatId}`,
+    const response =
+      await fetch(
 
-      {
+        `${import.meta.env.VITE_API_URL}/chat-pdf?query=${encodeURIComponent(
+          currentQuestion
+        )}&chat_id=${chatId}`,
 
-        method: "POST",
+        {
 
-      }
+          method: "POST",
 
-    );
+        }
 
-    // STREAM READER
+      );
+
+    if (!response.body) {
+
+      throw new Error(
+        "No response body"
+      );
+
+    }
 
     const reader =
       response.body.getReader();
@@ -270,7 +334,7 @@ useEffect(() => {
 
     let aiText = "";
 
-    // ADD EMPTY AI MESSAGE FIRST
+    // EMPTY AI MESSAGE
 
     setMessages((prev) => [
 
@@ -292,7 +356,7 @@ useEffect(() => {
 
         done,
 
-        value
+        value,
 
       } = await reader.read();
 
@@ -303,13 +367,9 @@ useEffect(() => {
 
       aiText += chunk;
 
-      // UPDATE LAST MESSAGE LIVE
-
       setMessages((prev) => {
 
         const updated = [...prev];
-
-        // UPDATE LAST AI MESSAGE
 
         updated[
           updated.length - 1
@@ -327,24 +387,24 @@ useEffect(() => {
 
     }
 
-    // OPTIONAL REFRESH HISTORY
+    setIsStreaming(false);
 
     fetchChatHistory();
 
   } catch (error) {
 
-    console.error(
-      "Streaming Error:",
-      error
-    );
+    console.error(error);
+
+    setIsStreaming(false);
 
   }
 
 };
 
-  // =========================
-  // CREATE MINDMAP
-  // =========================
+
+// =========================
+// CREATE MINDMAP
+// =========================
 
 const createMindMapNodes = () => {
 
@@ -352,8 +412,8 @@ const createMindMapNodes = () => {
 
   let parentIndex = 0;
 
-  Object.entries(data.mindmap).forEach(
-    ([parent, children]) => {
+  Object.entries(data.mindmap)
+    .forEach(([parent, children]) => {
 
       const nodes = [];
       const edges = [];
@@ -364,62 +424,98 @@ const createMindMapNodes = () => {
       // MAIN NODE
 
       nodes.push({
-  id: parentId,
 
-  data: {
-    label: parent,
-  },
+        id: parentId,
 
-  position: {
-    x: 250,
-    y: 40,
-  },
+        data: {
 
-  style: {
-    background: "#06b6d4",
-    color: "black",
-    border: "none",
-    padding: 10,
-    borderRadius: 18,
-    fontWeight: "bold",
-    fontSize: 13,
-    minWidth: 140,
-    textAlign: "center",
-  },
-});
+          label: parent,
+
+        },
+
+        position: {
+
+          x: 250,
+
+          y: 40,
+
+        },
+
+        style: {
+
+          background: "#06b6d4",
+
+          color: "black",
+
+          border: "none",
+
+          padding: 10,
+
+          borderRadius: 18,
+
+          fontWeight: "bold",
+
+          fontSize: 13,
+
+          minWidth: 140,
+
+          textAlign: "center",
+
+        },
+
+      });
 
       let childIndex = 0;
 
-      Object.entries(children).forEach(
-        ([subTopic, points]) => {
+      Object.entries(children)
+        .forEach(([subTopic, points]) => {
 
           const childId =
             `${parentId}-${childIndex}`;
 
           nodes.push({
-  id: childId,
 
-  data: {
-    label: subTopic,
-  },
+            id: childId,
 
-  position: {
-    x: 80 + childIndex * 160,
-    y: 150,
-  },
+            data: {
 
-  style: {
-    background: "#18181b",
-    color: "white",
-    border: "1px solid #3f3f46",
-    padding: 8,
-    borderRadius: 14,
-    minWidth: 120,
-    textAlign: "center",
-  },
-});
+              label: subTopic,
+
+            },
+
+            position: {
+
+              x:
+                80 +
+                childIndex * 160,
+
+              y: 150,
+
+            },
+
+            style: {
+
+              background: "#18181b",
+
+              color: "white",
+
+              border:
+                "1px solid #3f3f46",
+
+              padding: 8,
+
+              borderRadius: 14,
+
+              minWidth: 120,
+
+              textAlign: "center",
+
+            },
+
+          });
 
           edges.push({
+
             id:
               `edge-${parentId}-${childId}`,
 
@@ -430,8 +526,11 @@ const createMindMapNodes = () => {
             animated: true,
 
             style: {
+
               stroke: "#06b6d4",
+
             },
+
           });
 
           points.forEach(
@@ -441,30 +540,52 @@ const createMindMapNodes = () => {
                 `${childId}-${pointIndex}`;
 
               nodes.push({
-  id: pointId,
 
-  data: {
-    label: point,
-  },
+                id: pointId,
 
-  position: {
-    x: 70 + childIndex * 160,
-    y: 260 + pointIndex * 70,
-  },
+                data: {
 
-  style: {
-    background: "#27272a",
-    color: "#d4d4d8",
-    border: "1px solid #3f3f46",
-    padding: 6,
-    borderRadius: 12,
-    fontSize: 10,
-    minWidth: 100,
-    textAlign: "center",
-  },
-});
+                  label: point,
+
+                },
+
+                position: {
+
+                  x:
+                    70 +
+                    childIndex * 160,
+
+                  y:
+                    260 +
+                    pointIndex * 70,
+
+                },
+
+                style: {
+
+                  background: "#27272a",
+
+                  color: "#d4d4d8",
+
+                  border:
+                    "1px solid #3f3f46",
+
+                  padding: 6,
+
+                  borderRadius: 12,
+
+                  fontSize: 10,
+
+                  minWidth: 100,
+
+                  textAlign: "center",
+
+                },
+
+              });
 
               edges.push({
+
                 id:
                   `edge-${childId}-${pointId}`,
 
@@ -475,8 +596,11 @@ const createMindMapNodes = () => {
                 animated: true,
 
                 style: {
+
                   stroke: "#a855f7",
+
                 },
+
               });
 
             }
@@ -484,251 +608,58 @@ const createMindMapNodes = () => {
 
           childIndex++;
 
-        }
-      );
+        });
 
       maps.push({
+
         title: parent,
+
         nodes,
+
         edges,
+
       });
 
       parentIndex++;
 
-    }
-  );
+    });
 
   return maps;
 
 };
 
-  const maps =
-  createMindMapNodes();
 
-  // =========================
-  // NODE CLICK
-  // =========================
+// =========================
+// OPTIMIZED MAPS
+// =========================
 
-  const onNodeClick = async (_, node) => {
+const maps = useMemo(() => {
 
-  setSelectedNode(node);
+  return createMindMapNodes();
 
-  setNodeExplanation(
-    "Loading explanation..."
-  );
+}, [data.mindmap]);
 
-  try {
 
-    const response = await fetch(
+// =========================
+// FETCH CHAT HISTORY
+// =========================
 
-      `http://127.0.0.1:8000/explain-node?topic=${encodeURIComponent(
-        node.data.label
-      )}`,
-
-      {
-
-        method: "POST",
-
-      }
-
-    );
-
-    // STREAM READER
-
-    const reader =
-      response.body.getReader();
-
-    const decoder =
-      new TextDecoder();
-
-    let fullText = "";
-
-    while (true) {
-
-      const {
-
-        done,
-
-        value
-
-      } = await reader.read();
-
-      if (done) break;
-
-      const chunk =
-        decoder.decode(value);
-
-      fullText += chunk;
-
-      // LIVE UPDATE
-
-      setNodeExplanation(
-        fullText
-      );
-
-    }
-
-  } catch (error) {
-
-    console.error(error);
-
-    setNodeExplanation(
-      "Failed to load explanation."
-    );
-
-  }
-
-};
-
-  // =========================
-  // EXPORT PNG
-  // =========================
-
-  const exportMindmap = async () => {
-
-    if (!mindmapRef.current) return;
-
-    try {
-
-      const dataUrl =
-        await htmlToImage.toPng(
-          mindmapRef.current,
-          {
-            cacheBust: true,
-            backgroundColor: "#000",
-          }
-        );
-
-      const link =
-        document.createElement("a");
-
-      link.download =
-        "ai-mindmap.png";
-
-      link.href = dataUrl;
-
-      link.click();
-
-    } catch (error) {
-
-      console.error(error);
-
-    }
-
-  };
-  const startQuiz = () => {
-
-  setQuizMode(true);
-
-  setCurrentQuestion(0);
-
-  setShowAnswer(false);
-
-  setScore(0);
-
-};
-
-const nextQuestion = () => {
-
-  if (
-    currentQuestion <
-    data.flashcards.length - 1
-  ) {
-
-    setCurrentQuestion(
-      currentQuestion + 1
-    );
-
-    setSelectedOption("");
-
-    setAnswerChecked(false);
-
-    setIsCorrect(false);
-
-  } else {
-
-    alert(
-      `Quiz Finished! Score: ${score}/${data.flashcards.length}`
-    );
-
-    setQuizMode(false);
-
-  }
-
-};
-
-const markCorrect = () => {
-
-  setScore(score + 1);
-
-  nextQuestion();
-
-};
-const getQuizOptions = () => {
-
-  if (
-    !data.flashcards[currentQuestion]
-  ) return [];
-
-  const correctAnswer =
-    data.flashcards[currentQuestion]
-      .answer;
-
-  const allAnswers =
-    data.flashcards.map(
-      (card) => card.answer
-    );
-
-  const wrongAnswers =
-    allAnswers
-      .filter(
-        (ans) =>
-          ans !== correctAnswer
-      )
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-
-  const options = [
-    correctAnswer,
-    ...wrongAnswers,
-  ].sort(() => 0.5 - Math.random());
-
-  return options;
-
-};
-const checkAnswer = () => {
-
-  const correctAnswer =
-    data.flashcards[currentQuestion]
-      .answer;
-
-  const correct =
-    selectedOption === correctAnswer;
-
-  setIsCorrect(correct);
-
-  setAnswerChecked(true);
-
-  if (correct) {
-    setScore(score + 1);
-  }
-
-};
 const fetchChatHistory = async () => {
 
-  if (!token || !chatId) return;
+  if (!token || !chatId)
+    return;
 
   try {
 
-    const response = await fetch(
+    const response =
+      await fetch(
 
-      `http://127.0.0.1:8000/chat-history/${chatId}`
+        `${import.meta.env.VITE_API_URL}/chat-history/${chatId}`
 
-    );
+      );
 
-    const data = await response.json();
-
-    // UPDATE MAIN CHAT STATE
+    const data =
+      await response.json();
 
     setMessages(data);
 
@@ -740,45 +671,80 @@ const fetchChatHistory = async () => {
 
 };
 
-useEffect(() => {
 
-  if (token) {
+// =========================
+// FETCH ALL CHATS
+// =========================
 
-    fetchAllChats();
+const fetchAllChats = async () => {
+
+  try {
+
+    const response =
+      await fetch(
+
+        `${import.meta.env.VITE_API_URL}/all-chats`
+
+      );
+
+    const data =
+      await response.json();
+
+    setAllChats(data);
+
+  } catch (error) {
+
+    console.log(error);
 
   }
 
-}, [chatId]);
-const fetchAllChats = async () => {
-
-  const response = await fetch(
-    "http://127.0.0.1:8000/all-chats"
-  );
-
-  const data = await response.json();
-
-  setAllChats(data);
-
 };
+
+
+// =========================
+// CREATE NEW CHAT
+// =========================
+
 const createNewChat = async () => {
 
-  const response = await fetch(
-    "http://127.0.0.1:8000/create-chat",
-    {
-      method: "POST",
-    }
-  );
+  try {
 
-  const data = await response.json();
+    const response =
+      await fetch(
 
-  setChatId(data.chat_id);
+        `${import.meta.env.VITE_API_URL}/create-chat`,
 
-  fetchAllChats();
+        {
+
+          method: "POST",
+
+        }
+
+      );
+
+    const data =
+      await response.json();
+
+    setChatId(data.chat_id);
+
+    fetchAllChats();
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
 
 };
+
+
+// =========================
+// CLEAR HISTORY
+// =========================
+
 const clearHistory = async () => {
 
-  // CLEAR UI FIRST
+  // CLEAR UI
 
   setMessages([]);
 
@@ -786,7 +752,7 @@ const clearHistory = async () => {
 
   setShowHistory(false);
 
-  // CLEAR DB IF LOGGED IN
+  // CLEAR DB
 
   if (token) {
 
@@ -794,7 +760,7 @@ const clearHistory = async () => {
 
       await fetch(
 
-        `http://127.0.0.1:8000/clear-history/${chatId}`,
+        `${import.meta.env.VITE_API_URL}/clear-history/${chatId}`,
 
         {
 
@@ -1217,6 +1183,7 @@ const clearHistory = async () => {
       fitViewOptions={{
         padding: 4,
       }}
+      onlyRenderVisibleElements={true}
     >
 
       <Background />
@@ -1636,7 +1603,9 @@ const clearHistory = async () => {
     >
 
       {msg.content}
-      {msg.role === "assistant" && (
+      {msg.role === "assistant" && 
+      isStreaming &&
+      index === messages.length - 1(
     <span className="animate-pulse">
       ▋
     </span>
@@ -1771,6 +1740,7 @@ const clearHistory = async () => {
     fitViewOptions={{
       padding: 1.8,
     }}
+    onlyRenderVisibleElements={true}
   >
 
     <Background />
@@ -1846,6 +1816,7 @@ const clearHistory = async () => {
         fitViewOptions={{
           padding: 0.5,
         }}
+        onlyRenderVisibleElements={true}
       >
 
         <MiniMap />
@@ -1906,4 +1877,4 @@ const clearHistory = async () => {
 
   );
 
-}
+

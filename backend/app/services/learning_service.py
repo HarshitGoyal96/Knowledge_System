@@ -131,6 +131,9 @@ CONTENT:
         # PARSE JSON
 
         parsed = json.loads(output)
+        if not isinstance(parsed, dict):
+
+            raise Exception("Invalid AI JSON response")
 
         # SAFETY FALLBACKS
 

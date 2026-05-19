@@ -8,10 +8,18 @@ from app.models.chat import Chat
 from app.models.message import Message
 app = FastAPI(title="Knowledge System API")
 
+
+origins = [
+
+    "http://localhost:5173",
+
+    "https://your-frontend.vercel.app",
+
+]
 # ✅ CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

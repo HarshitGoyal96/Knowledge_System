@@ -13,7 +13,7 @@ model = SentenceTransformer(
 # CHROMADB CLIENT
 
 client = chromadb.PersistentClient(
-    path="./chroma_db"
+    path="chroma_db"
 )
 
 collection = client.get_or_create_collection(
@@ -74,7 +74,8 @@ def store_pdf_chunks(
     chunks = split_text(text)
 
     embeddings = model.encode(
-        chunks
+        chunks,
+        normalize_embeddings=True
     ).tolist()
 
     for chunk, embedding in zip(
@@ -180,3 +181,20 @@ def get_relevant_documents(
     return "\n".join(
         documents[:top_k]
     )
+def reset_collection():
+
+    global collection
+
+    try:
+
+        existing = collection.get()
+
+        if existing["ids"]:
+
+            collection.delete(
+                ids=existing["ids"]
+            )
+
+    except Exception as e:
+
+        print("RESET ERROR:", e)

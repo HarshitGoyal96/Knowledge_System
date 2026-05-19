@@ -52,6 +52,9 @@ def generate_answer(query, text):
     context = "\n".join(
         context_parts
     )
+    if not context.strip():
+
+        context = "No relevant PDF context found."
 
     print("Context:", context)
 

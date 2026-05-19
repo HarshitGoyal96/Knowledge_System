@@ -6,7 +6,7 @@ import easyocr
 from textblob import TextBlob
 
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+# pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 reader = easyocr.Reader(['en'], gpu=False)
 
