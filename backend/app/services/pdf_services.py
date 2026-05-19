@@ -1,6 +1,6 @@
 import io
 import hashlib
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from pdf2image import convert_from_bytes
 import pytesseract
 import cv2
