@@ -30,7 +30,7 @@ export default function App() {
 
 
   const [chatId, setChatId] =
-  useState(1);
+  useState(0);
   const [chatOpen, setChatOpen] = useState(false);
 
   const [fullMindmap, setFullMindmap] =
@@ -72,7 +72,23 @@ const [isCorrect, setIsCorrect] =
     flashcards: [],
     mindmap: {},
   });
+useEffect(() => {
 
+  if (token) {
+
+    // LOGGED IN USER
+
+    setChatId(1);
+
+  } else {
+
+    // GUEST USER
+
+    setChatId(0);
+
+  }
+
+}, [token]);
   // =========================
   // FILE UPLOAD
   // =========================
@@ -762,24 +778,37 @@ const createNewChat = async () => {
 };
 const clearHistory = async () => {
 
-  try {
+  // CLEAR UI FIRST
 
-    await fetch(
-      `http://127.0.0.1:8000/clear-history/${chatId}`,
-      {
-        method: "DELETE",
-      }
-    );
+  setMessages([]);
 
-    setSavedHistory([]);
+  setSavedHistory([]);
 
-    setShowHistory(false);
+  setShowHistory(false);
 
-    setChatHistory([]);
+  // CLEAR DB IF LOGGED IN
 
-  } catch (error) {
+  if (token) {
 
-    console.log(error);
+    try {
+
+      await fetch(
+
+        `http://127.0.0.1:8000/clear-history/${chatId}`,
+
+        {
+
+          method: "DELETE",
+
+        }
+
+      );
+
+    } catch (error) {
+
+      console.log(error);
+
+    }
 
   }
 
@@ -1830,6 +1859,48 @@ const clearHistory = async () => {
   </div>
 
 )}
+{/* FUTURISTIC BACKGROUND */}
+
+<div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+
+  {/* GRID */}
+
+  <div
+    className="absolute inset-0 opacity-[0.07]"
+    style={{
+
+      backgroundImage: `
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)
+      `,
+
+      backgroundSize: "40px 40px",
+
+    }}
+  />
+
+  {/* CYAN GLOW */}
+
+  <div className="absolute bottom-[-120px] left-[-120px] w-[450px] h-[450px] bg-cyan-500/10 blur-[140px] rounded-full" />
+
+  {/* PURPLE GLOW */}
+
+  <div className="absolute bottom-[-150px] right-[-120px] w-[450px] h-[450px] bg-fuchsia-500/10 blur-[140px] rounded-full" />
+
+  {/* WATERMARK */}
+
+  <div className="absolute inset-0 flex items-center justify-center">
+
+    <h1 className="text-[180px] font-black tracking-widest text-white/[0.02] select-none">
+
+      AI
+
+    </h1>
+
+  </div>
+
+</div>
+
 
     </div>
 

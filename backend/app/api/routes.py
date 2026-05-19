@@ -114,17 +114,23 @@ async def chat_pdf(
 
     db = SessionLocal()
 
-    # SAVE USER MESSAGE
+    # SAVE USER MESSAGE ONLY IF LOGGED IN
 
-    user_message = Message(
-        role="user",
-        content=query,
-        chat_id=chat_id
-    )
+    if chat_id != 0:
 
-    db.add(user_message)
+        user_message = Message(
 
-    db.commit()
+            role="user",
+
+            content=query,
+
+            chat_id=chat_id
+
+        )
+
+        db.add(user_message)
+
+        db.commit()
 
     # STREAM RESPONSE
 
@@ -143,15 +149,21 @@ async def chat_pdf(
 
         # SAVE AI MESSAGE
 
-        ai_message = Message(
-            role="assistant",
-            content=full_answer,
-            chat_id=chat_id
-        )
+        if chat_id != 0:
 
-        db.add(ai_message)
+            ai_message = Message(
 
-        db.commit()
+                role="assistant",
+
+                content=full_answer,
+
+                chat_id=chat_id
+
+                )   
+
+            db.add(ai_message)
+
+            db.commit()
 
     return StreamingResponse(
         generate_stream(),
