@@ -13,7 +13,7 @@ origins = [
 
     "http://localhost:5173",
 
-    "https://your-frontend.vercel.app",
+    "https://knowledge-system-km63nxw28-harshit-goyal-s-projects1.vercel.app/dashboard",
 
 ]
 # ✅ CORS Middleware

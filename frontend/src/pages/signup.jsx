@@ -14,7 +14,7 @@ export default function Signup() {
   const handleSignup = async () => {
 
     const response = await fetch(
-      "http://127.0.0.1:8000/signup",
+      `${import.meta.env.VITE_API_URL}/signup`,
       {
         method: "POST",
         headers: {
