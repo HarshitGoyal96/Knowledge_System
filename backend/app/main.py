@@ -7,6 +7,9 @@ from app.models.pdf_document import PDFDocument
 from app.models.chat import Chat
 from app.models.message import Message
 app = FastAPI(title="Knowledge System API")
+from app.db.database import Base , engine
+
+Base.metadata.create_all(bind=engine)
 
 
 # origins = [

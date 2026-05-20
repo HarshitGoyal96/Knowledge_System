@@ -23,9 +23,7 @@ from app.services.auth_service import (
     create_access_token
 )
 
-from app.db.database import Base
 
-Base.metadata.create_all(bind=engine)
 
 router = APIRouter()
 
