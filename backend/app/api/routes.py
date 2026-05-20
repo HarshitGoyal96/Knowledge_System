@@ -202,16 +202,20 @@ async def explain_node(
     topic: str = Query(...)
 ):
 
-    return StreamingResponse(
+    explanation = ""
 
-        explain_topic(
-            topic,
-            ""
-        ),
+    async for chunk in explain_topic(
+        topic,
+        ""
+    ):
 
-        media_type="text/plain"
+        explanation += chunk
 
-    )
+    return {
+
+        "explanation": explanation
+
+    }
 @router.post("/create-chat")
 def create_chat():
 
