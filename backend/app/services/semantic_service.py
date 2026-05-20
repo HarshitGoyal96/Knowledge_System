@@ -2,9 +2,6 @@ import chromadb
 import uuid
 import re
 
-
-# CHROMADB CLIENT
-
 client = chromadb.PersistentClient(
     path="chroma_db"
 )
@@ -13,10 +10,19 @@ collection = client.get_or_create_collection(
     name="pdf_memory"
 )
 
-
 # CLEAN TEXT
 
 def clean_chunk(text):
+
+    text = re.sub(
+
+        r'[^\w\s.,:!?()-]',
+
+        ' ',
+
+        text
+
+    )
 
     text = re.sub(
 
@@ -30,10 +36,12 @@ def clean_chunk(text):
 
     return text.strip()
 
-
 # SPLIT TEXT
 
-def split_text(text, chunk_size=300):
+def split_text(
+    text,
+    chunk_size=400
+):
 
     words = text.split()
 
@@ -57,8 +65,7 @@ def split_text(text, chunk_size=300):
 
     return chunks
 
-
-# STORE PDF CHUNKS
+# STORE CHUNKS
 
 def store_pdf_chunks(
     text,
@@ -83,43 +90,46 @@ def store_pdf_chunks(
 
         )
 
-
-# SIMPLE KEYWORD SEARCH
+# SEMANTIC SEARCH
 
 def search_chunks(
     query,
     top_k=5
 ):
 
-    results = collection.get()
+    results = collection.query(
 
-    documents = results["documents"]
+        query_texts=[query],
 
-    metadatas = results["metadatas"]
+        n_results=top_k
+
+    )
+
+    documents = results["documents"][0]
+
+    metadatas = results["metadatas"][0]
+
+    distances = results["distances"][0]
 
     formatted_results = []
 
-    query = query.lower()
-
-    for doc, meta in zip(
+    for doc, meta, distance in zip(
         documents,
-        metadatas
+        metadatas,
+        distances
     ):
 
-        if query in doc.lower():
+        formatted_results.append({
 
-            formatted_results.append({
+            "text": doc,
 
-                "text": doc,
+            "metadata": meta,
 
-                "metadata": meta,
+            "distance": distance
 
-                "distance": 0
+        })
 
-            })
-
-    return formatted_results[:top_k]
-
+    return formatted_results
 
 # GET ALL DOCS
 
@@ -130,20 +140,6 @@ def get_all_documents():
     documents = results["documents"]
 
     return "\n".join(documents)
-
-
-def get_relevant_documents(
-    top_k=20
-):
-
-    results = collection.get()
-
-    documents = results["documents"]
-
-    return "\n".join(
-        documents[:top_k]
-    )
-
 
 # RESET COLLECTION
 
