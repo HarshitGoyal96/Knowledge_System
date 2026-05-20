@@ -81,14 +81,14 @@ async def search_pdf(
 
         formatted_results = [
 
-            {
-                "text": text,
-                "source": meta["source"]
-            }
+    {
+        "text": item["text"],
+        "source": item["metadata"]["source"]
+    }
 
-            for text, meta in results
+    for item in results
 
-        ]
+]
 
         return {
 

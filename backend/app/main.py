@@ -9,19 +9,19 @@ from app.models.message import Message
 app = FastAPI(title="Knowledge System API")
 
 
-origins = [
+# origins = [
 
-    "http://localhost:5173",
+#     "http://localhost:5173",
 
-    "https://knowledge-system-9b7ji2c-harshit-goyal-s-projects1.vercel.app",
+#     "https://knowledge-system-9b7ji2c-harshit-goyal-s-projects1.vercel.app",
 
-]
+# ]
 
 app.add_middleware(
 
     CORSMiddleware,
 
-    allow_origins=origins,
+    allow_origins=["*"],
 
     allow_credentials=True,
 
