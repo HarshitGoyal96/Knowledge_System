@@ -182,7 +182,7 @@ const handleUpload = async (e) => {
 
     await fetch(
 
-      `${import.meta.env.VITE_API_URL}/reset-memory`,
+      `${import.meta.env.VITE_API_URL}reset-memory`,
 
       {
 
@@ -219,7 +219,7 @@ const handleUpload = async (e) => {
 
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/upload-pdf`,
+        `${import.meta.env.VITE_API_URL}upload-pdf`,
 
         {
 
@@ -238,7 +238,7 @@ const handleUpload = async (e) => {
     const response =
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/analyze-notes`,
+        `${import.meta.env.VITE_API_URL}analyze-notes`,
 
         {
 
@@ -311,7 +311,7 @@ const askQuestion = async () => {
     const response =
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/chat-pdf?query=${encodeURIComponent(
+        `${import.meta.env.VITE_API_URL}chat-pdf?query=${encodeURIComponent(
           currentQuestion
         )}&chat_id=${chatId}`,
 
@@ -659,7 +659,7 @@ const fetchChatHistory = async () => {
     const response =
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/chat-history/${chatId}`
+        `${import.meta.env.VITE_API_URL}chat-history/${chatId}`
 
       );
 
@@ -688,7 +688,7 @@ const fetchAllChats = async () => {
     const response =
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/all-chats`
+        `${import.meta.env.VITE_API_URL}all-chats`
 
       );
 
@@ -717,7 +717,7 @@ const createNewChat = async () => {
     const response =
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/create-chat`,
+        `${import.meta.env.VITE_API_URL}create-chat`,
 
         {
 
@@ -765,7 +765,7 @@ const clearHistory = async () => {
 
       await fetch(
 
-        `${import.meta.env.VITE_API_URL}/clear-history/${chatId}`,
+        `${import.meta.env.VITE_API_URL}clear-history/${chatId}`,
 
         {
 
