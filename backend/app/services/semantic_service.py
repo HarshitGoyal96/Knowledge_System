@@ -19,18 +19,16 @@ collection = client.get_or_create_collection(
 def clean_chunk(text):
 
     text = re.sub(
-        r'[^a-zA-Z0-9\s.,:]',
-        ' ',
-        text
-    )
 
-    text = re.sub(
         r'\s+',
+
         ' ',
+
         text
+
     )
 
-    return text.lower().strip()
+    return text.strip()
 
 
 # SPLIT TEXT
