@@ -202,20 +202,48 @@ async def explain_node(
     topic: str = Query(...)
 ):
 
-    explanation = ""
+    try:
 
-    async for chunk in explain_topic(
-        topic,
-        ""
-    ):
+        explanation = ""
 
-        explanation += chunk
+        response = explain_topic(
+            topic,
+            ""
+        )
 
-    return {
+        # HANDLE NORMAL STRING
 
-        "explanation": explanation
+        if isinstance(response, str):
 
-    }
+            explanation = response
+
+        else:
+
+            # HANDLE GENERATOR
+
+            for chunk in response:
+
+                explanation += chunk
+
+        return {
+
+            "success": True,
+
+            "explanation": explanation
+
+        }
+
+    except Exception as e:
+
+        print("EXPLAIN NODE ERROR:", e)
+
+        return {
+
+            "success": False,
+
+            "error": str(e)
+
+        }
 @router.post("/create-chat")
 def create_chat():
 
