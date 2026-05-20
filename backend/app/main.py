@@ -24,7 +24,7 @@ app.add_middleware(
 
     CORSMiddleware,
 
-    allow_origins=["https://knowledge-system-9rnmy7aaj-harshit-goyal-s-projects1.vercel.app"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
 
     allow_credentials=True,
 
