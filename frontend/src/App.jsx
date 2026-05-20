@@ -211,6 +211,11 @@ const handleUpload = async (e) => {
         "file",
         file
       );
+      console.log(import.meta.env.VITE_API_URL);
+
+      console.log(
+        `${import.meta.env.VITE_API_URL}/upload-pdf`
+        );
 
       await fetch(
 
