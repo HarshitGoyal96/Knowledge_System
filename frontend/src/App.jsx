@@ -634,40 +634,80 @@ const createMindMapNodes = () => {
 };
 const onNodeClick = async (_, node) => {
 
-    setSelectedNode(node);
+  setSelectedNode(node);
 
-    setNodeExplanation("");
+  setNodeExplanation("Loading explanation...");
 
-    if (!uploadedFile) return;
+  if (
+    !uploadedFiles ||
+    uploadedFiles.length === 0
+  ) {
+
+    setNodeExplanation(
+      "No uploaded file found."
+    );
+
+    return;
+
+  }
+
+  try {
 
     const formData = new FormData();
 
-    formData.append("file", uploadedFile);
+    formData.append(
+      "file",
+      uploadedFiles[0]
+    );
 
-    try {
+    const response = await fetch(
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}explain-node?topic=${node.data.label}`,
-        {
-          method: "POST",
-          body: formData,
-        }
+      `${import.meta.env.VITE_API_URL}explain-node?topic=${encodeURIComponent(
+        node.data.label
+      )}`,
+
+      {
+
+        method: "POST",
+
+        body: formData,
+
+      }
+
+    );
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Failed to fetch explanation"
       );
-
-      const result =
-        await response.json();
-
-      setNodeExplanation(
-        result.explanation
-      );
-
-    } catch (error) {
-
-      console.error(error);
 
     }
 
-  };
+    const result =
+      await response.json();
+
+    setNodeExplanation(
+
+      result.explanation ||
+
+      "No explanation available."
+
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    setNodeExplanation(
+
+      "Error generating explanation."
+
+    );
+
+  }
+
+};
 
   // =========================
   // EXPORT PNG
