@@ -13,7 +13,7 @@ export default function Login() {
   const handleLogin = async () => {
 
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/login`,
+      `${import.meta.env.VITE_API_URL}login`,
       {
         method: "POST",
         headers: {
