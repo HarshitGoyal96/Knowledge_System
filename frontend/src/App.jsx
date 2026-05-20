@@ -633,7 +633,103 @@ const createMindMapNodes = () => {
 
 };
 
+const startQuiz = () => {
 
+  setQuizMode(true);
+
+  setCurrentQuestion(0);
+
+  setShowAnswer(false);
+
+  setScore(0);
+
+};
+
+const nextQuestion = () => {
+
+  if (
+    currentQuestion <
+    data.flashcards.length - 1
+  ) {
+
+    setCurrentQuestion(
+      currentQuestion + 1
+    );
+
+    setSelectedOption("");
+
+    setAnswerChecked(false);
+
+    setIsCorrect(false);
+
+  } else {
+
+    alert(
+      `Quiz Finished! Score: ${score}/${data.flashcards.length}`
+    );
+
+    setQuizMode(false);
+
+  }
+
+};
+
+const markCorrect = () => {
+
+  setScore(score + 1);
+
+  nextQuestion();
+
+};
+const getQuizOptions = () => {
+
+  if (
+    !data.flashcards[currentQuestion]
+  ) return [];
+
+  const correctAnswer =
+    data.flashcards[currentQuestion]
+      .answer;
+
+  const allAnswers =
+    data.flashcards.map(
+      (card) => card.answer
+    );
+
+  const wrongAnswers =
+    allAnswers
+      .filter(
+        (ans) =>
+          ans !== correctAnswer
+      )
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 3);
+
+  const options = [
+    correctAnswer,
+    ...wrongAnswers,
+  ].sort(() => 0.5 - Math.random());
+
+  return options;
+
+};
+const checkAnswer = () => {
+
+  const correctAnswer =
+    data.flashcards[currentQuestion]
+      .answer;
+
+  const correct =
+    selectedOption === correctAnswer;
+
+  setIsCorrect(correct);
+
+  setAnswerChecked(true);
+
+  if (correct) {
+    setScore(score + 1);
+  }
+}
 // =========================
 // OPTIMIZED MAPS
 // =========================
