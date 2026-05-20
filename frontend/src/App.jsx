@@ -632,7 +632,79 @@ const createMindMapNodes = () => {
   return maps;
 
 };
+const onNodeClick = async (_, node) => {
 
+    setSelectedNode(node);
+
+    setNodeExplanation("");
+
+    if (!uploadedFile) return;
+
+    const formData = new FormData();
+
+    formData.append("file", uploadedFile);
+
+    try {
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}explain-node?topic=${node.data.label}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result =
+        await response.json();
+
+      setNodeExplanation(
+        result.explanation
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+
+  };
+
+  // =========================
+  // EXPORT PNG
+  // =========================
+
+  const exportMindmap = async () => {
+
+    if (!mindmapRef.current) return;
+
+    try {
+
+      const dataUrl =
+        await htmlToImage.toPng(
+          mindmapRef.current,
+          {
+            cacheBust: true,
+            backgroundColor: "#000",
+          }
+        );
+
+      const link =
+        document.createElement("a");
+
+      link.download =
+        "ai-mindmap.png";
+
+      link.href = dataUrl;
+
+      link.click();
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+
+  };
 const startQuiz = () => {
 
   setQuizMode(true);
@@ -880,11 +952,7 @@ const clearHistory = async () => {
   }
 
 };
-const exportMindmap = () => {
 
-  alert("Export feature coming soon 🚀");
-
-};
   return (
 
     <div className="min-h-screen bg-black text-white overflow-hidden relative">
